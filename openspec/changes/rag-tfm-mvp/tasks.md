@@ -8,7 +8,7 @@
 
 ## 2. Corpus Directory
 
-- [ ] 2.1 Create empty `data/manuals/` with a `.gitkeep` for the user's own manuals (gitignored contents) — no manual files are committed in this change (see the `sample-corpus-sourcing` stub change)
+- [x] 2.1 Create empty `data/manuals/` with a `.gitkeep` for the user's own manuals (gitignored contents) — no manual files are committed in this change (see the `sample-corpus-sourcing` stub change)
 
 ## 3. Manual Ingestion (`manual-ingestion` capability)
 
