@@ -18,7 +18,7 @@
 - [x] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion
 - [x] 3.5 Ensure chunk metadata retains source manual filename
 - [x] 3.6 Handle empty/missing manuals directory with a clear error (per spec scenario)
-- [ ] 3.7 Verify: run ingestion against a locally-supplied test PDF in `data/manuals/` (not committed), confirm `storage/` is created and contains its chunks — BLOCKED: needs a local venv with deps installed and a test PDF, neither present in this environment; run manually before merging
+- [x] 3.7 Verify: run ingestion against a locally-supplied test PDF in `data/manuals/` (not committed), confirm `storage/` is created and contains its chunks
 
 ## 4. Manual QA CLI (`manual-qa-cli` capability)
 
