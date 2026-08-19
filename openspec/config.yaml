@@ -1,0 +1,57 @@
+schema: spec-driven
+
+context: |
+  Project: rag-tfm ("RTFM") — a small, finished RAG project demonstrating RAG
+  development, LLMOps tracing, and evaluation practice end to end.
+
+  Concept: ingest digital technical manuals (home devices/appliances, PDF, text-only —
+  no diagram/vision understanding) and answer questions about them with citations.
+  Comparative eval is a first-class feature: run the same question set through a
+  no-RAG baseline and a RAG pipeline, score both with Ragas metrics, to empirically
+  demonstrate RAG's value rather than just build a pipeline.
+
+  Decided so far (this session, outside OpenSpec): tracing via Langfuse, not a
+  custom logger. Text-only PDFs, no vision models — keep scope small and finishable.
+  Real manufacturer manuals are a copyright risk to ship in a public repo — likely
+  resolved via gitignored private manuals directory + a few openly-licensed sample
+  manuals committed for reviewers, but not finalized.
+
+  Not yet decided (needs interview): CLI tool shape/UX, LLM/embedding provider
+  choice, vector store, exact eval question set size and format, chunking strategy,
+  README structure. Do not assume the earlier draft plan (Anthropic+LlamaIndex+
+  Chroma+local HF embeddings) is final — it was Claude's first pass, rejected by
+  the user in favor of using OpenSpec's interview process to nail details properly.
+
+  Deployment: local only, no cloud hosting in scope. Publishes to GitHub under the
+  `gorz-0815` account via HTTPS remote, not SSH.
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
