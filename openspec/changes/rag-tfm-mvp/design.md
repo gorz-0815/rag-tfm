@@ -14,6 +14,7 @@ First implementation of `rag-tfm`, greenfield — no existing code or specs to i
 - Diagram/image understanding in manuals — text-only per proposal
 - Hosted/managed vector store or production deployment
 - A third "search-tool" eval condition — discussed and deferred, not part of this change
+- Pluggable/multi-provider LLM backend — tracked as the `pluggable-llm-backend` stub change (default backend for v1 still under discussion, see PR #1)
 
 ## Decisions
 
