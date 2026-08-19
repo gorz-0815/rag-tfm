@@ -12,13 +12,13 @@
 
 ## 3. Manual Ingestion (`manual-ingestion` capability)
 
-- [ ] 3.1 Implement `src/ingest.py`: load PDFs via SimpleDirectoryReader/pypdf from a configurable manuals directory
-- [ ] 3.2 Chunk with `SentenceSplitter`, chunk_size/overlap read from `src/config.py`/env (defaults 512/64 per design.md)
-- [ ] 3.3 Embed chunks with local HF embedding model (`BAAI/bge-small-en-v1.5` or similar) via `llama-index-embeddings-huggingface`
-- [ ] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion
-- [ ] 3.5 Ensure chunk metadata retains source manual filename
-- [ ] 3.6 Handle empty/missing manuals directory with a clear error (per spec scenario)
-- [ ] 3.7 Verify: run ingestion against a locally-supplied test PDF in `data/manuals/` (not committed), confirm `storage/` is created and contains its chunks
+- [x] 3.1 Implement `src/ingest.py`: load PDFs via SimpleDirectoryReader/pypdf from a configurable manuals directory
+- [x] 3.2 Chunk with `SentenceSplitter`, chunk_size/overlap read from `src/config.py`/env (defaults 512/64 per design.md)
+- [x] 3.3 Embed chunks with local HF embedding model (`BAAI/bge-small-en-v1.5` or similar) via `llama-index-embeddings-huggingface`
+- [x] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion
+- [x] 3.5 Ensure chunk metadata retains source manual filename
+- [x] 3.6 Handle empty/missing manuals directory with a clear error (per spec scenario)
+- [x] 3.7 Verify: run ingestion against a locally-supplied test PDF in `data/manuals/` (not committed), confirm `storage/` is created and contains its chunks
 
 ## 4. Manual QA CLI (`manual-qa-cli` capability)
 

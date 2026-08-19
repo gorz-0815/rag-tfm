@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import json,sys; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path') or d.get('tool_response',{}).get('filePath') or ''; print(f) if f.endswith('.py') else None\" | { read -r f; if [ -n \"$f\" ]; then ruff check --fix \"$f\" && ruff format \"$f\"; fi; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
