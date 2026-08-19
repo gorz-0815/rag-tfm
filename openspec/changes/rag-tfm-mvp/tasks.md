@@ -4,7 +4,7 @@
 - [ ] 1.2 Create `requirements.txt` (llama-index, llama-index-llms-anthropic, llama-index-embeddings-huggingface, llama-index-vector-stores-chroma, chromadb, langfuse, ragas, langchain-anthropic, pypdf, python-dotenv)
 - [ ] 1.3 Create `.env.example` (ANTHROPIC_API_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST)
 - [ ] 1.4 Add MIT `LICENSE`
-- [ ] 1.5 Create `src/` package skeleton (`src/__init__.py`, `src/config.py` for env loading, model names, chunk size, paths)
+- [ ] 1.5 Create `src/` package skeleton (`src/__init__.py`, `src/config.py` for env loading, model names, paths, and configurable chunk_size/chunk_overlap)
 
 ## 2. Sample Corpus
 
@@ -16,7 +16,7 @@
 ## 3. Manual Ingestion (`manual-ingestion` capability)
 
 - [ ] 3.1 Implement `src/ingest.py`: load PDFs via SimpleDirectoryReader/pypdf from a configurable manuals directory
-- [ ] 3.2 Chunk with `SentenceSplitter` (chunk_size=512, overlap=64 per design.md)
+- [ ] 3.2 Chunk with `SentenceSplitter`, chunk_size/overlap read from `src/config.py`/env (defaults 512/64 per design.md)
 - [ ] 3.3 Embed chunks with local HF embedding model (`BAAI/bge-small-en-v1.5` or similar) via `llama-index-embeddings-huggingface`
 - [ ] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion
 - [ ] 3.5 Ensure chunk metadata retains source manual filename
