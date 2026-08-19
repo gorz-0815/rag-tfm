@@ -17,14 +17,25 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    PDF, confirm storage/ is created") — implement, verify, check it off, then
    move to the next task. Don't batch multiple unrelated checkboxes into one
    uncommitted pile.
-4. Commit at section boundaries (1. Scaffold, 2. Corpus, 3. Ingestion, ...) —
-   each section finishes at a working, testable milestone and maps to one of
-   the four capabilities in the proposal. Don't commit mid-section with a
-   half-working capability.
-5. When every task in `tasks.md` is checked, use `openspec-archive-change` to
+4. **PRs are scoped one per `tasks.md` section** (1. Scaffold, 2. Corpus,
+   3. Ingestion, 4. CLI, 5. Tracing, 6. Eval, 7. README) — matches the PR #1
+   precedent (one PR per OpenSpec unit of work) while keeping each PR small
+   enough to review, since each section is a working, testable milestone tied
+   to a capability. Don't commit mid-section with a half-working capability,
+   and don't bundle multiple sections into one PR.
+5. **Worktree-per-PR:** each section's work happens in its own worktree/branch,
+   pushed as its own PR against `main`. Don't stack unrelated section work into
+   an already-open PR's branch.
+6. **Review loop:** the user reviews on GitHub and leaves inline comments
+   directly on the PR's code — they don't hand back a written list. Once told
+   to work the PR, invoke the `pr-comment-triage` skill: it enumerates the
+   PR's outstanding review comments, makes the change and replies in-thread
+   for clear asks, and replies with a clarifying question (no guessing) for
+   ambiguous ones. Only merge once comments are resolved and the user says so.
+7. When every task in `tasks.md` is checked, use `openspec-archive-change` to
    move the change to `openspec/changes/archive/` and sync its delta specs
    into `openspec/specs/`.
-6. Other changes under `openspec/changes/` (`interactive-cli`,
+8. Other changes under `openspec/changes/` (`interactive-cli`,
    `pluggable-llm-backend`, `openai-embeddings-option`, `sample-corpus-sourcing`)
    are proposal-only stubs for deferred work — do not implement them alongside
    `rag-tfm-mvp` unless the user explicitly asks to pull one in.
