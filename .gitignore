@@ -4,6 +4,7 @@ venv/
 __pycache__/
 *.pyc
 storage/
-data/manuals/
+data/manuals/*
+!data/manuals/.gitkeep
 *.db
 .DS_Store

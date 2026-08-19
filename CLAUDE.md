@@ -17,12 +17,16 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    PDF, confirm storage/ is created") — implement, verify, check it off, then
    move to the next task. Don't batch multiple unrelated checkboxes into one
    uncommitted pile.
-4. **PRs are scoped one per `tasks.md` section** (1. Scaffold, 2. Corpus,
-   3. Ingestion, 4. CLI, 5. Tracing, 6. Eval, 7. README) — matches the PR #1
-   precedent (one PR per OpenSpec unit of work) while keeping each PR small
-   enough to review, since each section is a working, testable milestone tied
-   to a capability. Don't commit mid-section with a half-working capability,
-   and don't bundle multiple sections into one PR.
+4. **PRs are scoped by reviewable weight, not mechanically one-per-section.**
+   `tasks.md` sections (1. Scaffold, 2. Corpus, 3. Ingestion, 4. CLI,
+   5. Tracing, 6. Eval, 7. README) are the starting unit, but thin/wiring-only
+   sections get bundled into an adjacent section rather than shipped as their
+   own PR (sections 1+2 turned out too small standalone — fold scaffold+corpus
+   together next time; section 5/Tracing is wiring into the query path from
+   section 4/CLI, so it rides along with that PR instead of going solo).
+   Split into its own PR only where a section is a substantial, independent
+   capability slice (ingestion, CLI, eval). Don't commit mid-section with a
+   half-working capability.
 5. **Worktree-per-PR:** each section's work happens in its own worktree/branch,
    pushed as its own PR against `main`. Don't stack unrelated section work into
    an already-open PR's branch.
