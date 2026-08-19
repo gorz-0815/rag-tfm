@@ -52,6 +52,6 @@
 - [ ] 7.3 Write README eval section referencing `results/eval_results.md`, interpreted not just raw numbers
 - [ ] 7.4 Write README cost/latency/scalability trade-offs section (chunking trade-off, per-query cost estimate, local Chroma scaling ceiling, what production would need instead)
 - [ ] 7.5 Write README corpus note: no manuals are committed in this repo, how to add your own to `data/manuals/` to run ingestion/eval locally
-- [ ] 7.6 Note explicitly in README: demo project, not production-ready; future work includes the interactive CLI and a search-tool eval condition
+- [ ] 7.6 Note explicitly in README: demo project, not production-ready; future work tracked as separate stub changes under `openspec/changes/` (interactive CLI, pluggable LLM backend, sample-corpus sourcing, and a search-tool eval condition)
 - [ ] 7.7 Final secrets check: confirm no `.env`, API keys, `storage/`, or `data/manuals/` private content in `git status` or history before first commit
 - [ ] 7.8 `git init`, first commit; add `github` remote (`https://github.com/gorz-0815/rag-tfm.git`) once the empty repo exists on GitHub — do not push without separate confirmation
