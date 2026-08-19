@@ -37,10 +37,22 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    PR's outstanding review comments, makes the change and replies in-thread
    for clear asks, and replies with a clarifying question (no guessing) for
    ambiguous ones. Only merge once comments are resolved and the user says so.
-7. When every task in `tasks.md` is checked, use `openspec-archive-change` to
+7. **Testing: pytest for logic that doesn't need heavy runtime deps.**
+   `tasks.md`'s own "Verify" steps are manual end-to-end runs against real
+   deps (a real PDF, a real Anthropic call, the Langfuse UI) — that stays as
+   is, it's not being replaced. Alongside that, add `tests/` pytest coverage
+   for the cheap, dependency-light logic in each section (guard clauses,
+   config wiring, parsing/formatting) — e.g. `src/ingest.py`'s
+   `validate_manuals_dir` is a plain function tests exercise directly, while
+   the actual embedding/Chroma/LLM calls stay manual-only. Keep heavy
+   third-party imports (`llama_index`, `chromadb`, embedding libs) inside the
+   functions that need them rather than at module level, so importing the
+   module for a unit test doesn't require the full dependency stack to be
+   installed. Tests live in `tests/`, mirroring `src/`.
+8. When every task in `tasks.md` is checked, use `openspec-archive-change` to
    move the change to `openspec/changes/archive/` and sync its delta specs
    into `openspec/specs/`.
-8. Other changes under `openspec/changes/` (`interactive-cli`,
+9. Other changes under `openspec/changes/` (`interactive-cli`,
    `pluggable-llm-backend`, `openai-embeddings-option`, `sample-corpus-sourcing`)
    are proposal-only stubs for deferred work — do not implement them alongside
    `rag-tfm-mvp` unless the user explicitly asks to pull one in.

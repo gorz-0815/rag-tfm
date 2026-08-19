@@ -8,3 +8,4 @@ ragas
 langchain-anthropic
 pypdf
 python-dotenv
+pytest
