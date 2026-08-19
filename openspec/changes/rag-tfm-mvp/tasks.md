@@ -22,12 +22,12 @@
 
 ## 4. Manual QA CLI (`manual-qa-cli` capability)
 
-- [ ] 4.1 Implement `src/query.py` with a single-shot `ask` CLI command: `python -m src.ask "<question>"`
-- [ ] 4.2 Implement RAG mode: retrieve top-k chunks from the persisted index, build prompt, call Claude, print answer
-- [ ] 4.3 Implement citation output: list source manual(s) alongside the RAG-mode answer
-- [ ] 4.4 Implement no-RAG mode flag: send only the question to Claude, no retrieval, no citations
-- [ ] 4.5 Handle no-relevant-content case: if retrieval returns nothing usable, say so rather than fabricating an answer
-- [ ] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-RAG mode (baseline, uncited)
+- [x] 4.1 Implement `src/query.py` with a single-shot `ask` CLI command: `python -m src.ask "<question>"`
+- [x] 4.2 Implement RAG mode: retrieve top-k chunks from the persisted index, build prompt, call Claude, print answer
+- [x] 4.3 Implement citation output: list source manual(s) alongside the RAG-mode answer
+- [x] 4.4 Implement no-RAG mode flag: send only the question to Claude, no retrieval, no citations
+- [x] 4.5 Handle no-relevant-content case: if retrieval returns nothing usable, say so rather than fabricating an answer
+- [ ] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-RAG mode (baseline, uncited) — BLOCKED: needs a real ANTHROPIC_API_KEY and incurs real API cost; run manually before merging
 
 ## 5. Query Tracing (`query-tracing` capability)
 
