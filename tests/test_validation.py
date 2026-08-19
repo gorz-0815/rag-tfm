@@ -1,6 +1,6 @@
 import pytest
 
-from src.ingest import validate_manuals_dir
+from src.validation import validate_manuals_dir
 
 
 def test_validate_manuals_dir_missing(tmp_path):
