@@ -1,10 +1,10 @@
 ## 1. Project Scaffold
 
-- [ ] 1.1 Create `.gitignore` (`.venv/`, `.env`, `storage/`, `data/manuals/`, `__pycache__/`, `*.db`)
-- [ ] 1.2 Create `requirements.txt` (llama-index, llama-index-llms-anthropic, llama-index-embeddings-huggingface, llama-index-vector-stores-chroma, chromadb, langfuse, ragas, langchain-anthropic, pypdf, python-dotenv)
-- [ ] 1.3 Create `.env.example` (ANTHROPIC_API_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST)
-- [ ] 1.4 Add MIT `LICENSE`
-- [ ] 1.5 Create `src/` package skeleton (`src/__init__.py`, `src/config.py` for env loading, model names, paths, and configurable chunk_size/chunk_overlap)
+- [x] 1.1 Create `.gitignore` (`.venv/`, `.env`, `storage/`, `data/manuals/`, `__pycache__/`, `*.db`)
+- [x] 1.2 Create `requirements.txt` (llama-index, llama-index-llms-anthropic, llama-index-embeddings-huggingface, llama-index-vector-stores-chroma, chromadb, langfuse, ragas, langchain-anthropic, pypdf, python-dotenv)
+- [x] 1.3 Create `.env.example` (ANTHROPIC_API_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST)
+- [x] 1.4 Add MIT `LICENSE`
+- [x] 1.5 Create `src/` package skeleton (`src/__init__.py`, `src/config.py` for env loading, model names, paths, and configurable chunk_size/chunk_overlap)
 
 ## 2. Corpus Directory
 
