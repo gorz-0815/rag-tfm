@@ -29,7 +29,7 @@ First implementation of `rag-tfm`, greenfield — no existing code or specs to i
 
 **Ragas judge model: `langchain-anthropic`'s `ChatAnthropic`, wrapped via Ragas' `LangchainLLMWrapper`; same local HF embeddings wrapped via `LangchainEmbeddingsWrapper` for context-based metrics.** Reuses the same model family as generation for consistency and avoids adding a third provider just for evaluation.
 
-**Corpus: sample manuals committed under an openly-licensed source; user's own manuals kept in a gitignored directory.** Per interview decision. Concrete license verification (source, license text, attribution) happens during implementation, before any file is committed — this is a task-level checklist item (see `tasks.md`), not a design decision to pre-resolve here.
+**Corpus: no manual files are committed in this change.** Reversed from the earlier plan to ship openly-licensed sample manuals — per review feedback, corpus sourcing/licensing needs more thought and is deferred (tracked as the `sample-corpus-sourcing` stub change). Ingestion and eval in this change run against manuals the user supplies locally in the gitignored `data/manuals/`; the repo is not "clone and run" out of the box until a sample corpus decision is made.
 
 **CLI shape (v1): a single `ask` command taking a question as its argument, with a mode flag for RAG vs no-RAG.** Matches the interview decision to start simple; the richer interactive CLI is explicitly out of scope for this change (see Non-Goals).
 
@@ -37,7 +37,7 @@ First implementation of `rag-tfm`, greenfield — no existing code or specs to i
 
 - **[Risk]** Local embedding model quality may cause weak retrieval on some manuals, making the RAG-vs-no-RAG eval gap look smaller than it should → **Mitigation**: eval questions are written to be answerable from clearly-worded manual sections, keeping retrieval quality less of a confound for a demo-scale corpus.
 - **[Risk]** Langfuse Cloud outage/unreachability during a demo → **Mitigation**: `query-tracing` spec requires tracing failure to degrade gracefully (answer still returned, warning surfaced), not block the CLI.
-- **[Risk]** Committing a "openly-licensed" manual that turns out to have licensing restrictions not initially noticed → **Mitigation**: explicit per-file license verification task before commit (see `tasks.md`), not left implicit.
+- **[Risk]** No manuals are committed in this change, so the repo isn't runnable out of the box for reviewers → **Mitigation**: explicitly accepted trade-off per review feedback; tracked as the `sample-corpus-sourcing` stub change rather than rushed.
 - **[Trade-off]** Local embeddings keep the project dependency-light and free to run, at the cost of retrieval quality versus a hosted embedding API — accepted and documented in the README rather than hidden.
 
 ## Open Questions

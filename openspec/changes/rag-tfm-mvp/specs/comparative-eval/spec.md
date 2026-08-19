@@ -5,7 +5,7 @@ Proves, with numbers rather than assertion, that retrieval-augmented answers are
 ## ADDED Requirements
 
 ### Requirement: Hand-written evaluation question set
-The system SHALL include a committed set of approximately 15-20 questions about the sample manuals, each with a human-verified ground-truth answer.
+The system SHALL support a set of approximately 15-20 questions about the ingested manuals, each with a human-verified ground-truth answer.
 
 #### Scenario: Eval set is loadable and complete
 - **WHEN** the evaluation command runs
