@@ -9,7 +9,9 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from src import config
 from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt
 
-TOP_K = 4
+# Number of top-ranked chunks retrieved per question and passed to the LLM
+# as context in RAG mode (see ask_rag's similarity_top_k usage below).
+SIMILARITY_TOP_K = 4
 
 
 def load_manuals_index() -> VectorStoreIndex:
@@ -28,12 +30,12 @@ def load_manuals_index() -> VectorStoreIndex:
 
 def ask_rag(question: str) -> dict:
     index = load_manuals_index()
-    nodes = index.as_retriever(similarity_top_k=TOP_K).retrieve(question)
+    nodes = index.as_retriever(similarity_top_k=SIMILARITY_TOP_K).retrieve(question)
 
     if not nodes:
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
-    # Only the top TOP_K retrieved chunks go into context, not the whole
+    # Only the top SIMILARITY_TOP_K retrieved chunks go into context, not the whole
     # manual - smaller than no-RAG's implicit "whatever Claude already knows",
     # but also smaller than the source document. Chunks are joined in
     # retrieval-rank (relevance) order, not their original position in the
