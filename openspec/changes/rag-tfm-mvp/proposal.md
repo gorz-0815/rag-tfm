@@ -4,7 +4,7 @@ This project is a small, finished demonstration of RAG development, LLMOps traci
 
 ## What Changes
 
-- New RAG application: ingest openly-licensed technical manuals (PDF, text-only) into a local vector index and answer natural-language questions about them, with citations to source chunks.
+- New RAG application: ingest user-supplied technical manuals (PDF, text-only) into a local vector index and answer natural-language questions about them, with citations to source chunks.
 - New single-shot CLI command (`ask`) as v1 surface — no interactive/session mode yet (explicitly deferred to a future change).
 - New end-to-end tracing of every query (chunks retrieved, prompt sent, latency per step, token usage) via Langfuse.
 - New comparative evaluation harness: run the same hand-written question set through a no-RAG baseline and the RAG pipeline, score both with Ragas metrics (faithfulness, answer relevancy always; context precision/recall for the RAG condition), and produce an interpreted results report — not just raw numbers.
@@ -25,5 +25,5 @@ This project is a small, finished demonstration of RAG development, LLMOps traci
 
 - New project at `F:\dev\rag-tfm`, Python-based (LlamaIndex, llama-index-llms-anthropic, local HF embeddings, Chroma, Langfuse SDK, Ragas, langchain-anthropic for the Ragas judge LLM).
 - New dependency: Anthropic API key (user-provided, local `.env`, never committed) and a Langfuse account/keys (cloud free tier, local `.env`).
-- New data: a small set of openly-licensed sample manuals committed to the repo for out-of-the-box reproducibility; a `data/manuals/` directory for the user's own private manuals is gitignored.
+- New data: no manual files are committed in this change; a `data/manuals/` directory for the user's own manuals is gitignored. Sample-corpus sourcing is deferred (tracked as the `sample-corpus-sourcing` stub change).
 - Publishes to GitHub under the `gorz-0815` account via HTTPS remote.

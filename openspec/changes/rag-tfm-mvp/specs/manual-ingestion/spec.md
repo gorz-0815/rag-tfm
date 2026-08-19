@@ -7,8 +7,8 @@ Turns a directory of text-based PDF technical manuals into a queryable local vec
 ### Requirement: Ingest PDF manuals into a local vector index
 The system SHALL load all PDF files from a configured manuals directory, split them into chunks, embed each chunk with a local (non-API) embedding model, and persist the result as a local vector index that can be reused across CLI invocations without re-ingesting.
 
-#### Scenario: Successful ingestion of sample manuals
-- **WHEN** the ingestion command is run against the committed sample manuals directory
+#### Scenario: Successful ingestion of a manuals directory
+- **WHEN** the ingestion command is run against a manuals directory containing one or more PDFs
 - **THEN** a persisted local vector index is created on disk containing chunks from every PDF in that directory, and the command exits successfully
 
 #### Scenario: Re-running ingestion after adding a manual

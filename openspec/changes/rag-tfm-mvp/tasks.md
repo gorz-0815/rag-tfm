@@ -6,12 +6,9 @@
 - [ ] 1.4 Add MIT `LICENSE`
 - [ ] 1.5 Create `src/` package skeleton (`src/__init__.py`, `src/config.py` for env loading, model names, paths, and configurable chunk_size/chunk_overlap)
 
-## 2. Sample Corpus
+## 2. Corpus Directory
 
-- [ ] 2.1 Identify 3-4 openly-licensed technical manuals/guides suitable as sample corpus (text-based PDF, small size)
-- [ ] 2.2 Verify and record license/attribution for each before committing (source URL, license name, any attribution requirement)
-- [ ] 2.3 Add sample manuals to `data/sample_manuals/`, with license/attribution noted in README
-- [ ] 2.4 Create empty `data/manuals/` with a `.gitkeep` for the user's own private manuals (gitignored contents)
+- [ ] 2.1 Create empty `data/manuals/` with a `.gitkeep` for the user's own manuals (gitignored contents) — no manual files are committed in this change (see the `sample-corpus-sourcing` stub change)
 
 ## 3. Manual Ingestion (`manual-ingestion` capability)
 
@@ -21,7 +18,7 @@
 - [ ] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion
 - [ ] 3.5 Ensure chunk metadata retains source manual filename
 - [ ] 3.6 Handle empty/missing manuals directory with a clear error (per spec scenario)
-- [ ] 3.7 Verify: run ingestion against `data/sample_manuals/`, confirm `storage/` is created and contains chunks from every sample manual
+- [ ] 3.7 Verify: run ingestion against a locally-supplied test PDF in `data/manuals/` (not committed), confirm `storage/` is created and contains its chunks
 
 ## 4. Manual QA CLI (`manual-qa-cli` capability)
 
@@ -41,7 +38,7 @@
 
 ## 6. Comparative Eval (`comparative-eval` capability)
 
-- [ ] 6.1 Write `data/eval_qa.json`: ~15-20 hand-written questions against the sample manuals, each with a manually-verified ground-truth answer
+- [ ] 6.1 Write `data/eval_qa.json`: ~15-20 hand-written questions against the manuals present in `data/manuals/` at the time, each with a manually-verified ground-truth answer (not committed with real manual content until a corpus decision is made — see the `sample-corpus-sourcing` stub change)
 - [ ] 6.2 Implement `src/eval.py`: run every eval question through both no-RAG and RAG conditions using `src/query.py`'s functions
 - [ ] 6.3 Build a Ragas `EvaluationDataset` from the results; wrap Claude (`langchain-anthropic` + `LangchainLLMWrapper`) as judge and the local HF embeddings (`LangchainEmbeddingsWrapper`) for context metrics
 - [ ] 6.4 Score faithfulness + answer_relevancy for both conditions; context_precision + context_recall for RAG only
@@ -54,7 +51,7 @@
 - [ ] 7.2 Write README tracing section referencing `results/sample_trace.md`
 - [ ] 7.3 Write README eval section referencing `results/eval_results.md`, interpreted not just raw numbers
 - [ ] 7.4 Write README cost/latency/scalability trade-offs section (chunking trade-off, per-query cost estimate, local Chroma scaling ceiling, what production would need instead)
-- [ ] 7.5 Write README corpus/licensing note (why manuals aren't shipped wholesale, how to add your own to `data/manuals/`)
+- [ ] 7.5 Write README corpus note: no manuals are committed in this repo, how to add your own to `data/manuals/` to run ingestion/eval locally
 - [ ] 7.6 Note explicitly in README: demo project, not production-ready; future work includes the interactive CLI and a search-tool eval condition
 - [ ] 7.7 Final secrets check: confirm no `.env`, API keys, `storage/`, or `data/manuals/` private content in `git status` or history before first commit
 - [ ] 7.8 `git init`, first commit; add `github` remote (`https://github.com/gorz-0815/rag-tfm.git`) once the empty repo exists on GitHub — do not push without separate confirmation
