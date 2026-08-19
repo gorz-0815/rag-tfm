@@ -9,3 +9,5 @@ langchain-anthropic
 pypdf
 python-dotenv
 pytest
+ruff
+pre-commit

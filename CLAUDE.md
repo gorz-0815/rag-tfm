@@ -49,7 +49,15 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    functions that need them rather than at module level, so importing the
    module for a unit test doesn't require the full dependency stack to be
    installed. Tests live in `tests/`, mirroring `src/`.
-8. When every task in `tasks.md` is checked, use `openspec-archive-change` to
+8. **Lint/format: Ruff, applied automatically via pre-commit.** Config is in
+   `pyproject.toml` (`[tool.ruff]`); the hook is `language: system` (calls
+   the `ruff` already in `requirements.txt`) rather than pre-commit's own
+   managed env, because that path hit a Windows long-path build failure.
+   After `pip install -r requirements.txt`, run `pre-commit install` once per
+   clone so `ruff check --fix` + `ruff format` run automatically on every
+   `git commit`. If a hook run modifies files, re-stage and commit again —
+   that's expected pre-commit behavior, not a failure.
+9. When every task in `tasks.md` is checked, use `openspec-archive-change` to
    move the change to `openspec/changes/archive/` and sync its delta specs
    into `openspec/specs/`.
 9. Other changes under `openspec/changes/` (`interactive-cli`,
