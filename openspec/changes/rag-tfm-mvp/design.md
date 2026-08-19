@@ -10,7 +10,7 @@ First implementation of `rag-tfm`, greenfield — no existing code or specs to i
 - A defensible, interpreted comparative eval (no-RAG vs RAG) using Ragas
 
 **Non-Goals:**
-- Interactive/session CLI (multi-turn, mode-switching) — future change
+- Interactive/session CLI (multi-turn, mode-switching) — tracked as the `interactive-cli` stub change
 - Diagram/image understanding in manuals — text-only per proposal
 - Hosted/managed vector store or production deployment
 - A third "search-tool" eval condition — discussed and deferred, not part of this change
