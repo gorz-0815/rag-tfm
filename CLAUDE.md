@@ -17,16 +17,17 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    PDF, confirm storage/ is created") — implement, verify, check it off, then
    move to the next task. Don't batch multiple unrelated checkboxes into one
    uncommitted pile.
-4. **PRs are scoped by reviewable weight, not mechanically one-per-section.**
-   `tasks.md` sections (1. Scaffold, 2. Corpus, 3. Ingestion, 4. CLI,
-   5. Tracing, 6. Eval, 7. README) are the starting unit, but thin/wiring-only
-   sections get bundled into an adjacent section rather than shipped as their
-   own PR (sections 1+2 turned out too small standalone — fold scaffold+corpus
-   together next time; section 5/Tracing is wiring into the query path from
-   section 4/CLI, so it rides along with that PR instead of going solo).
-   Split into its own PR only where a section is a substantial, independent
-   capability slice (ingestion, CLI, eval). Don't commit mid-section with a
-   half-working capability.
+4. **PRs are scoped to match `specs/` capability boundaries, not raw
+   `tasks.md` section count.** Sections 3-6 (Ingestion, CLI, Tracing, Eval)
+   each map 1:1 to one of the four capabilities under `openspec/changes/
+   rag-tfm-mvp/specs/` and each has its own verify step — keep these as one
+   PR per section/capability, tracing included, even though it wires into
+   the CLI's query path. Sections 1+2 (Scaffold, Corpus) aren't capabilities
+   at all — no spec of their own, just repo plumbing — so bundle those two
+   into a single prep PR instead of splitting them (learned this the hard
+   way: shipped as two separate PRs first, both too small to be worth
+   reviewing on their own). Section 7 (README) stands alone as the final
+   wrap-up PR. Don't commit mid-section with a half-working capability.
 5. **Worktree-per-PR:** each section's work happens in its own worktree/branch,
    pushed as its own PR against `main`. Don't stack unrelated section work into
    an already-open PR's branch.
