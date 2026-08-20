@@ -13,8 +13,12 @@ from src.validation import validate_manuals_dir
 def build_index() -> VectorStoreIndex:
     validate_manuals_dir(config.MANUALS_DIR)
 
+    # exclude_hidden=False: the default check treats any dot-prefixed path
+    # segment as hidden, not just dotfiles inside manuals_dir - so a repo
+    # checked out under a hidden ancestor directory (e.g. a worktree under
+    # .claude/) would otherwise see every manual silently skipped.
     documents = SimpleDirectoryReader(
-        input_dir=str(config.MANUALS_DIR), required_exts=[".pdf"]
+        input_dir=str(config.MANUALS_DIR), required_exts=[".pdf"], exclude_hidden=False
     ).load_data()
 
     Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
