@@ -1,10 +1,10 @@
-"""Answer questions about ingested manuals via Claude, in RAG or no-RAG mode."""
+"""Answer questions about ingested manuals via Claude, in RAG or no-RAG mode.
 
-import chromadb
-from llama_index.core import Settings, VectorStoreIndex
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.llms.anthropic import Anthropic
-from llama_index.vector_stores.chroma import ChromaVectorStore
+Heavy third-party imports (llama_index, chromadb) are kept inside the
+functions that need them, not at module level, so this module - and the
+mocked tests in tests/test_query.py - can be imported without the full
+embeddings/vector-store stack installed. See CLAUDE.md #7.
+"""
 
 from src import config
 from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt
@@ -14,18 +14,29 @@ from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt
 SIMILARITY_TOP_K = 4
 
 
-def load_manuals_index() -> VectorStoreIndex:
+def load_manuals_index():
     """Open the Chroma index built by `src.ingest`.
 
     Reads the existing persisted collection at config.STORAGE_DIR; does not
     create or populate it. Run `python -m src.ingest` first, or this raises
     when the "manuals" collection doesn't exist yet.
     """
+    import chromadb
+    from llama_index.core import Settings, VectorStoreIndex
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    from llama_index.vector_stores.chroma import ChromaVectorStore
+
     Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
     chroma_client = chromadb.PersistentClient(path=str(config.STORAGE_DIR))
     chroma_collection = chroma_client.get_collection("manuals")
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     return VectorStoreIndex.from_vector_store(vector_store)
+
+
+def _build_llm():
+    from llama_index.llms.anthropic import Anthropic
+
+    return Anthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY)
 
 
 def ask_rag(question: str) -> dict:
@@ -46,7 +57,7 @@ def ask_rag(question: str) -> dict:
     context = "\n\n".join(node.get_content() for node in nodes)
     prompt = build_context_prompt(question, context)
 
-    llm = Anthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY)
+    llm = _build_llm()
     response = llm.complete(prompt)
 
     sources = sorted({node.metadata.get("file_name", "unknown") for node in nodes})
@@ -54,6 +65,6 @@ def ask_rag(question: str) -> dict:
 
 
 def ask_no_rag(question: str) -> dict:
-    llm = Anthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY)
+    llm = _build_llm()
     response = llm.complete(question)
     return {"answer": str(response), "sources": []}

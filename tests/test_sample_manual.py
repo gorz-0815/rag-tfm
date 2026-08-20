@@ -2,7 +2,9 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-MANUAL_PATH = Path(__file__).resolve().parent.parent / "data" / "manuals" / "aquaflow-200-manual.pdf"
+MANUAL_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "manuals" / "aquaflow-200-manual.pdf"
+)
 
 EXPECTED_SECTIONS = [
     "Overview",
