@@ -11,7 +11,7 @@ PROMPT_TEMPLATE.md holds the per-question user-turn template.
 
 from pathlib import Path
 
-NO_CONTEXT_MESSAGE = "No relevant content found in the ingested manuals."
+NO_CONTEXT_MESSAGE = "No relevant content found in the ingested manual."
 
 _ROOT = Path(__file__).resolve().parent.parent
 _SYSTEM_PROMPT_PATH = _ROOT / "SYSTEM_PROMPT.md"

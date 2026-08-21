@@ -1,4 +1,4 @@
-"""Mocked tests for src.query: verify RAG/no-RAG orchestration logic
+"""Mocked tests for src.query: verify RAG/no-context orchestration logic
 (prompt building, source extraction, no-context short-circuit) without
 calling the real Anthropic API or needing chromadb/llama_index installed.
 

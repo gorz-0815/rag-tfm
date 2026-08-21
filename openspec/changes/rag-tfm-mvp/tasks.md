@@ -34,18 +34,18 @@
 ## 5. Query Tracing (`query-tracing` capability)
 
 - [ ] 5.1 Wire Langfuse's callback-based LlamaIndex handler into `Settings.callback_manager` (per design.md decision)
-- [ ] 5.2 Confirm both RAG and no-RAG query paths produce a trace (chunks/prompt/latency/tokens where applicable)
+- [ ] 5.2 Confirm all three query paths (RAG, full-doc, no-context) produce a trace (chunks/extraction/prompt/latency/tokens where applicable)
 - [ ] 5.3 Add graceful degradation: if Langfuse is unreachable, still return the answer and print a warning instead of failing
 - [ ] 5.4 Verify: run one query, confirm a matching trace appears in the Langfuse Cloud UI; capture a written walkthrough for `results/sample_trace.md`
 
 ## 6. Comparative Eval (`comparative-eval` capability)
 
-- [ ] 6.1 Write `data/eval_qa.json`: ~15-20 hand-written questions against the manuals present in `data/manuals/` at the time, each with a manually-verified ground-truth answer (not committed with real manual content until a corpus decision is made — see the `sample-corpus-sourcing` stub change)
-- [ ] 6.2 Implement `src/eval.py`: run every eval question through both no-RAG and RAG conditions using `src/query.py`'s functions
+- [ ] 6.1 Write `data/eval_qa.json`: ~15-20 hand-written questions against the single manual named at eval time (per the single-manual-by-path model established in PR #7 review — no directory-wide scan), each with a manually-verified ground-truth answer (not committed with real manual content until a corpus decision is made — see the `sample-corpus-sourcing` stub change; the committed synthetic `data/manuals/aquaflow-200-manual.pdf` from PR #7 could serve as that eval target)
+- [ ] 6.2 Implement `src/eval.py`: run every eval question through both no-context and RAG conditions using `src/query.py`'s functions
 - [ ] 6.3 Build a Ragas `EvaluationDataset` from the results; wrap Claude (`langchain-anthropic` + `LangchainLLMWrapper`) as judge and the local HF embeddings (`LangchainEmbeddingsWrapper`) for context metrics
 - [ ] 6.4 Score faithfulness + answer_relevancy for both conditions; context_precision + context_recall for RAG only
 - [ ] 6.5 Write `results/eval_results.json` (raw) and `results/eval_results.md` (comparison table + prose interpretation of the gap)
-- [ ] 6.6 Verify: `python -m src.eval` completes end-to-end and produces a results table with a visible RAG-vs-no-RAG gap on manual-specific questions
+- [ ] 6.6 Verify: `python -m src.eval` completes end-to-end and produces a results table with a visible RAG-vs-no-context gap on manual-specific questions
 
 ## 7. README and Publish Prep
 
@@ -53,7 +53,7 @@
 - [ ] 7.2 Write README tracing section referencing `results/sample_trace.md`
 - [ ] 7.3 Write README eval section referencing `results/eval_results.md`, interpreted not just raw numbers
 - [ ] 7.4 Write README cost/latency/scalability trade-offs section (chunking trade-off, per-query cost estimate, local Chroma scaling ceiling, what production would need instead)
-- [ ] 7.5 Write README corpus note: no manuals are committed in this repo, how to add your own to `data/manuals/` to run ingestion/eval locally
+- [ ] 7.5 Write README corpus note: the app works with one manual at a time, named explicitly on the CLI (`python -m src.ingest <manual.pdf>`); a synthetic sample manual is committed at `data/manuals/aquaflow-200-manual.pdf` for out-of-the-box use, or point it at your own PDF
 - [ ] 7.6 Note explicitly in README: demo project, not production-ready; future work tracked as separate stub changes under `openspec/changes/` (interactive CLI, pluggable LLM backend, sample-corpus sourcing, and a search-tool eval condition)
 - [ ] 7.7 Final secrets check: confirm no `.env`, API keys, `storage/`, or `data/manuals/` private content in `git status` or history before first commit
 - [ ] 7.8 `git init`, first commit; add `github` remote (`https://github.com/gorz-0815/rag-tfm.git`) once the empty repo exists on GitHub — do not push without separate confirmation
