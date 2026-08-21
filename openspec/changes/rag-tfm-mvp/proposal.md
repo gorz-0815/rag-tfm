@@ -1,22 +1,22 @@
 ## Why
 
-This project is a small, finished demonstration of RAG development, LLMOps tracing, and model-quality evaluation. A generic "RAG over vendor docs" demo doesn't differentiate; a comparative eval that empirically proves RAG's value over a no-RAG baseline does.
+This project is a small, finished demonstration of RAG development, LLMOps tracing, and model-quality evaluation. A generic "RAG over vendor docs" demo doesn't differentiate; a comparative eval that empirically proves RAG's value over a no-context baseline does.
 
 ## What Changes
 
 - New RAG application: ingest user-supplied technical manuals (PDF, text-only) into a local vector index and answer natural-language questions about them, with citations to source chunks.
 - New single-shot CLI command (`ask`) as v1 surface — no interactive/session mode yet (explicitly deferred to a future change).
 - New end-to-end tracing of every query (chunks retrieved, prompt sent, latency per step, token usage) via Langfuse.
-- New comparative evaluation harness: run the same hand-written question set through a no-RAG baseline and the RAG pipeline, score both with Ragas metrics (faithfulness, answer relevancy always; context precision/recall for the RAG condition), and produce an interpreted results report — not just raw numbers.
+- New comparative evaluation harness: run the same hand-written question set through a no-context baseline and the RAG pipeline, score both with Ragas metrics (faithfulness, answer relevancy always; context precision/recall for the RAG condition), and produce an interpreted results report — not just raw numbers.
 - New README documenting setup, architecture, a sample trace walkthrough, eval results and interpretation, and an explicit cost/latency/scalability trade-offs section.
 
 ## Capabilities
 
 ### New Capabilities
-- `manual-ingestion`: load PDF manuals, chunk them, embed with a local embedding model, and persist a local vector index (Chroma) that queries run against.
-- `manual-qa-cli`: single-shot `ask` CLI command that answers a question against the indexed manuals using Claude (Anthropic) + retrieved context, returning an answer with cited source chunks; also supports a no-RAG mode (bare LLM, no retrieval) for baseline comparison.
-- `query-tracing`: every `ask` invocation (both RAG and no-RAG modes) is traced end-to-end in Langfuse — retrieved chunks, prompt, latency per step, token usage.
-- `comparative-eval`: a hand-written Q&A eval set (~15-20 questions with verified ground-truth answers) run through both no-RAG and RAG conditions, scored with Ragas metrics, output as an interpreted comparison report.
+- `manual-ingestion`: load a PDF manual (one at a time, named explicitly — see design.md's "Corpus scope" decision), chunk it, embed with a local embedding model, and persist a local vector index (Chroma) that queries run against.
+- `manual-qa-cli`: single-shot `ask` CLI command that answers a question against the indexed manuals using Claude (Anthropic) + retrieved context, returning an answer with cited source chunks; also supports a no-context mode (bare LLM, no retrieval) for baseline comparison.
+- `query-tracing`: every `ask` invocation (both RAG and no-context modes) is traced end-to-end in Langfuse — retrieved chunks, prompt, latency per step, token usage.
+- `comparative-eval`: a hand-written Q&A eval set (~15-20 questions with verified ground-truth answers) run through both no-context and RAG conditions, scored with Ragas metrics, output as an interpreted comparison report.
 
 ### Modified Capabilities
 (none — first change in this project)

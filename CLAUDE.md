@@ -1,7 +1,7 @@
 # rag-tfm — agent workflow
 
 Small RAG demo (ingest PDF manuals, cited Q&A, Langfuse tracing, Ragas eval vs.
-no-RAG baseline). Planning is done; implementation happens through OpenSpec.
+no-context baseline). Planning is done; implementation happens through OpenSpec.
 
 ## How work flows
 

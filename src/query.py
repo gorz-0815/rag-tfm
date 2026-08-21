@@ -81,7 +81,7 @@ def ask_rag(question: str) -> dict:
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
     # Only the top SIMILARITY_TOP_K retrieved chunks go into context, not the whole
-    # manual - smaller than no-RAG's implicit "whatever Claude already knows",
+    # manual - smaller than no-context's implicit "whatever Claude already knows",
     # but also smaller than the source document. Chunks are joined in
     # retrieval-rank (relevance) order, not their original position in the
     # manual, and each is a fixed-size window (see config.CHUNK_SIZE/
