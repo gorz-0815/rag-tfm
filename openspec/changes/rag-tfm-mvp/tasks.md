@@ -27,7 +27,7 @@
 - [x] 4.3 Implement citation output: list source manual(s) alongside the RAG-mode answer
 - [x] 4.4 Implement no-RAG mode flag: send only the question to Claude, no retrieval, no citations
 - [x] 4.5 Handle no-relevant-content case: if retrieval returns nothing usable, say so rather than fabricating an answer
-- [ ] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-RAG mode (baseline, uncited) — BLOCKED: needs a real ANTHROPIC_API_KEY and incurs real API cost; run manually before merging
+- [x] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-RAG mode (baseline, uncited) — verified 2026-08-20 against `data/manuals/aquaflow-200-manual.pdf`: RAG mode answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`; no-RAG mode gave a generic, product-agnostic, uncited answer that contradicted the manual
 
 ## 5. Query Tracing (`query-tracing` capability)
 
