@@ -28,28 +28,34 @@ ingestion. The manual only needs to be re-embedded when it changes.
 
 ## Query-time (`python -m src.ask`, every invocation)
 
-`--no-rag` skips straight to Claude with no context, for baseline
-comparison. The default path re-embeds the question with the *same* local
-model used at ingest time — embeddings from two different models aren't
-comparable — retrieves the top 4 chunks from Chroma, and only then calls
-Claude.
+`--no-rag` sends **only the bare question string** to Claude as the completion
+prompt — no manual content of any kind, not even the raw PDF text, is
+attached. It exists purely as an un-grounded baseline to compare against RAG
+mode. The default path re-embeds the question with the *same* local model
+used at ingest time — embeddings from two different models aren't
+comparable — retrieves the top 4 chunks from Chroma, joins their raw text
+into a single `context` string, and interpolates that plus the question into
+`PROMPT_TEMPLATE.md` before calling Claude.
 
 ```mermaid
 flowchart TD
     Q(["question"]) --> CLI["src/ask.py"]
 
-    CLI -->|"--no-rag"| NR["Claude\n(Anthropic API)"]
-    NR --> A1["answer\n(no sources)"]
+    CLI -->|"--no-rag"| NR["Claude (Anthropic API)\nprompt = question only"]
+    NR --> A1["answer\n(no sources, no manual content sent)"]
 
     CLI -->|"default: RAG"| EMB["bge-small-en-v1.5\nre-embed the question"]
-    EMB --> RET["Chroma retriever\ntop 4 chunks"]
-    RET -->|chunks found| CTX["build_context_prompt()"]
+    EMB --> RET["Chroma retriever\ntop 4 chunks by similarity"]
+    RET -->|chunks found| JOIN["join chunk text\n-> context string"]
+    JOIN --> CTX["PROMPT_TEMPLATE.md\ncontext + question interpolated in"]
     RET -->|"no chunks match"| NOCTX["NO_CONTEXT_MESSAGE\n(Claude never called)"]
-    CTX --> LLM["Claude\n(Anthropic API)"]
+    CTX --> LLM["Claude (Anthropic API)\nprompt = template w/ context + question"]
     LLM --> A2["answer + cited sources"]
 
     style EMB fill:#0f8b8d,stroke:#075355,color:#ffffff
     style RET fill:#0f8b8d,stroke:#075355,color:#ffffff
+    style JOIN fill:#0f8b8d,stroke:#075355,color:#ffffff
+    style CTX fill:#0f8b8d,stroke:#075355,color:#ffffff
     style NR fill:#b45309,stroke:#7a3d05,color:#ffffff
     style LLM fill:#b45309,stroke:#7a3d05,color:#ffffff
 ```
@@ -57,7 +63,10 @@ flowchart TD
 **Why `ask` feels slow:** the embedding model is loaded fresh on every
 single invocation before Claude is ever reached — that model load plus a
 handful of Hugging Face Hub metadata checks dominate the wall-clock time,
-not the Claude call itself. `--no-rag` skips all of it.
+not the Claude call itself. `--no-rag` skips all of it. This is inherent to
+a single-shot CLI process; a persistent session (see the `interactive-cli`
+stub under `openspec/changes/`) would let the embedding model be loaded
+once and reused across questions instead of reloaded per invocation.
 
 ## Components at a glance
 

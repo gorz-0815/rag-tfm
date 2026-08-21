@@ -74,3 +74,9 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
   `tasks.md` 7.8 explicitly calls this out as needing separate confirmation.
 - Repo is not "clone and run" out of the box until a sample corpus exists —
   this is an accepted trade-off, not a bug to fix silently.
+- If a worktree/checkout lives under a hidden ancestor directory (e.g.
+  `.claude/worktrees/<name>/`), `SimpleDirectoryReader`'s default
+  `exclude_hidden=True` treats every file under it as hidden and skips it —
+  `src/ingest.py` already passes `exclude_hidden=False` to work around this;
+  don't revert that without re-checking ingestion still finds manuals from
+  such a checkout.
