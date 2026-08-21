@@ -25,9 +25,11 @@
 - [x] 4.1 Implement `src/query.py` with a single-shot `ask` CLI command: `python -m src.ask "<question>"`
 - [x] 4.2 Implement RAG mode: retrieve top-k chunks from the persisted index, build prompt, call Claude, print answer
 - [x] 4.3 Implement citation output: list source manual(s) alongside the RAG-mode answer
-- [x] 4.4 Implement no-RAG mode flag: send only the question to Claude, no retrieval, no citations
+- [x] 4.4 Implement no-context mode flag (`--no-context`, renamed from `--no-rag` per review): send only the question to Claude, no retrieval, no citations
 - [x] 4.5 Handle no-relevant-content case: if retrieval returns nothing usable, say so rather than fabricating an answer
-- [x] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-RAG mode (baseline, uncited) — verified 2026-08-20 against `data/manuals/aquaflow-200-manual.pdf`: RAG mode answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`; no-RAG mode gave a generic, product-agnostic, uncited answer that contradicted the manual
+- [x] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-context mode (baseline, uncited) — verified 2026-08-20 against `data/manuals/aquaflow-200-manual.pdf`: RAG mode answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`; no-context mode gave a generic, product-agnostic, uncited answer that contradicted the manual
+- [x] 4.7 Implement full-document mode flag (`--full-doc`, added per review): send every manual's full extracted text as context, no retrieval/chunking, cite every manual
+- [x] 4.8 Verify: ask a manual-specific question in full-doc mode and confirm it returns a grounded answer citing every manual in `data/manuals/` — verified 2026-08-21: `--full-doc` answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`
 
 ## 5. Query Tracing (`query-tracing` capability)
 

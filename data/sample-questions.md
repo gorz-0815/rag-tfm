@@ -4,11 +4,12 @@ A small hand-written question set for exercising `python -m src.ask` against
 the synthetic `data/manuals/aquaflow-200-manual.pdf` manual (see its header
 comment for provenance: generated for this repo, not a real product).
 
-Run each with and without `--no-rag` to compare grounded vs. baseline answers:
+Run each across all three modes to compare grounded, full-doc, and baseline answers:
 
 ```
 python -m src.ask "How long should I soak a new filter cartridge before using it?"
-python -m src.ask "How long should I soak a new filter cartridge before using it?" --no-rag
+python -m src.ask "How long should I soak a new filter cartridge before using it?" --full-doc
+python -m src.ask "How long should I soak a new filter cartridge before using it?" --no-context
 ```
 
 ## Simple, single-chunk
@@ -32,7 +33,7 @@ python -m src.ask "How long should I soak a new filter cartridge before using it
 8. Can I use this filter during a boil-water advisory?
 9. Is the pitcher dishwasher safe?
 
-## Out-of-scope (should surface "no relevant context", and expose no-RAG hallucination)
+## Out-of-scope (should surface "no relevant context", and expose no-context hallucination)
 
 10. What's the warranty period for the AquaFlow 200?
 11. How do I descale a coffee maker?
