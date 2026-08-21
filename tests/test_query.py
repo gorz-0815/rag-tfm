@@ -16,14 +16,32 @@ class FakeLLMResponse:
         return self._text
 
 
+class FakeChatMessage:
+    def __init__(self, content):
+        self.content = content
+
+
+class FakeChatResponse:
+    def __init__(self, text):
+        self.message = FakeChatMessage(text)
+
+
 class FakeLLM:
+    """Fakes both llm.complete() (no-context mode) and llm.chat() (RAG/full-doc
+    modes, which send a real system message - see query._ask_with_context)."""
+
     def __init__(self, text="mocked answer"):
         self.text = text
         self.prompts_seen = []
+        self.messages_seen = []
 
     def complete(self, prompt):
         self.prompts_seen.append(prompt)
         return FakeLLMResponse(self.text)
+
+    def chat(self, messages):
+        self.messages_seen.append(messages)
+        return FakeChatResponse(self.text)
 
 
 class FakeNode:
@@ -88,11 +106,12 @@ def test_ask_rag_builds_context_prompt_and_dedupes_sources(monkeypatch):
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
-    assert len(fake_llm.prompts_seen) == 1
-    prompt = fake_llm.prompts_seen[0]
-    assert "How do I set up a new filter?" in prompt
-    assert "Soak the cartridge for 15 minutes." in prompt
-    assert "Rinse under running water." in prompt
+    assert len(fake_llm.messages_seen) == 1
+    system_message, user_message = fake_llm.messages_seen[0]
+    assert system_message.content == query.load_system_prompt()
+    assert "How do I set up a new filter?" in user_message.content
+    assert "Soak the cartridge for 15 minutes." in user_message.content
+    assert "Rinse under running water." in user_message.content
 
 
 def test_ask_full_doc_with_missing_manual_skips_llm_call(tmp_path, monkeypatch):
@@ -120,7 +139,8 @@ def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
-    assert len(fake_llm.prompts_seen) == 1
-    prompt = fake_llm.prompts_seen[0]
-    assert "How do I care for the filter?" in prompt
-    assert "Soak the cartridge for 15 minutes before use." in prompt
+    assert len(fake_llm.messages_seen) == 1
+    system_message, user_message = fake_llm.messages_seen[0]
+    assert system_message.content == query.load_system_prompt()
+    assert "How do I care for the filter?" in user_message.content
+    assert "Soak the cartridge for 15 minutes before use." in user_message.content
