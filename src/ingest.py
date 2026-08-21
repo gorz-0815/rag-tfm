@@ -1,16 +1,21 @@
-"""Ingest PDF manuals from data/manuals/ into a local Chroma-backed vector index."""
+"""Ingest PDF manuals from data/manuals/ into a local Chroma-backed vector index.
 
-import chromadb
-from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.vector_stores.chroma import ChromaVectorStore
+Heavy third-party imports (llama_index, chromadb) are kept inside build_index(),
+not at module level, so this module can be imported - e.g. by tests/test_ask_live.py
+- without the full embeddings/vector-store stack installed. See CLAUDE.md #7.
+"""
 
 from src import config
 from src.validation import validate_manuals_dir
 
 
-def build_index() -> VectorStoreIndex:
+def build_index():
+    import chromadb
+    from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, VectorStoreIndex
+    from llama_index.core.node_parser import SentenceSplitter
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    from llama_index.vector_stores.chroma import ChromaVectorStore
+
     validate_manuals_dir(config.MANUALS_DIR)
 
     # exclude_hidden=False: the default check treats any dot-prefixed path

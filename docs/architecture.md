@@ -28,21 +28,33 @@ ingestion. The manual only needs to be re-embedded when it changes.
 
 ## Query-time (`python -m src.ask`, every invocation)
 
-`--no-rag` sends **only the bare question string** to Claude as the completion
-prompt — no manual content of any kind, not even the raw PDF text, is
-attached. It exists purely as an un-grounded baseline to compare against RAG
-mode. The default path re-embeds the question with the *same* local model
-used at ingest time — embeddings from two different models aren't
-comparable — retrieves the top 4 chunks from Chroma, joins their raw text
-into a single `context` string, and interpolates that plus the question into
-`PROMPT_TEMPLATE.md` before calling Claude.
+Three mutually exclusive modes, chosen by CLI flag:
+
+- **`--no-context`** sends **only the bare question string** to Claude as the
+  completion prompt — no manual content of any kind, not even the raw PDF
+  text, is attached. A purely un-grounded baseline.
+- **`--full-doc`** skips retrieval entirely and sends **every manual's full
+  extracted text** (via `pypdf`, no chunking/embedding involved) as context.
+  No Chroma, no embedding model — but every manual's full text goes into the
+  prompt on every call, which is bigger and costlier than RAG's top-4 chunks.
+- **default (RAG)** re-embeds the question with the *same* local model used
+  at ingest time — embeddings from two different models aren't comparable —
+  retrieves the top 4 chunks from Chroma, joins their raw text into a single
+  `context` string, and interpolates that plus the question into
+  `PROMPT_TEMPLATE.md` before calling Claude.
 
 ```mermaid
 flowchart TD
     Q(["question"]) --> CLI["src/ask.py"]
 
-    CLI -->|"--no-rag"| NR["Claude (Anthropic API)\nprompt = question only"]
+    CLI -->|"--no-context"| NR["Claude (Anthropic API)\nprompt = question only"]
     NR --> A1["answer\n(no sources, no manual content sent)"]
+
+    CLI -->|"--full-doc"| PDF["pypdf: extract full text\nof every manual"]
+    PDF -->|manuals found| FCTX["PROMPT_TEMPLATE.md\nfull text of every manual + question"]
+    PDF -->|"no manuals"| NOCTX2["NO_CONTEXT_MESSAGE\n(Claude never called)"]
+    FCTX --> FLLM["Claude (Anthropic API)\nprompt = template w/ full text + question"]
+    FLLM --> A3["answer + every manual cited"]
 
     CLI -->|"default: RAG"| EMB["bge-small-en-v1.5\nre-embed the question"]
     EMB --> RET["Chroma retriever\ntop 4 chunks by similarity"]
@@ -56,14 +68,19 @@ flowchart TD
     style RET fill:#0f8b8d,stroke:#075355,color:#ffffff
     style JOIN fill:#0f8b8d,stroke:#075355,color:#ffffff
     style CTX fill:#0f8b8d,stroke:#075355,color:#ffffff
+    style PDF fill:#0f8b8d,stroke:#075355,color:#ffffff
+    style FCTX fill:#0f8b8d,stroke:#075355,color:#ffffff
     style NR fill:#b45309,stroke:#7a3d05,color:#ffffff
     style LLM fill:#b45309,stroke:#7a3d05,color:#ffffff
+    style FLLM fill:#b45309,stroke:#7a3d05,color:#ffffff
 ```
 
 **Why `ask` feels slow:** the embedding model is loaded fresh on every
 single invocation before Claude is ever reached — that model load plus a
 handful of Hugging Face Hub metadata checks dominate the wall-clock time,
-not the Claude call itself. `--no-rag` skips all of it. This is inherent to
+not the Claude call itself. `--no-context` skips all of it (`--full-doc`
+still skips the embedding model, but reads and sends more text per call
+than RAG mode). This is inherent to
 a single-shot CLI process; a persistent session (see the `interactive-cli`
 stub under `openspec/changes/`) would let the embedding model be loaded
 once and reused across questions instead of reloaded per invocation.
@@ -72,7 +89,8 @@ once and reused across questions instead of reloaded per invocation.
 
 | Component | Runs | Used by |
 |---|---|---|
-| `bge-small-en-v1.5` | local | ingest (embed chunks) & ask-rag (embed question) — must match on both sides |
+| `bge-small-en-v1.5` | local | ingest (embed chunks) & default RAG mode (embed question) — must match on both sides |
 | Chroma / `storage/` | local | persists chunk vectors; read by the retriever in RAG mode only |
-| Claude (Anthropic API) | network | every `ask.py` call, RAG or not — the only step that needs `ANTHROPIC_API_KEY` |
-| Hugging Face Hub | network | metadata/version checks when loading the embedding model, on both ingest and ask-rag |
+| `pypdf` | local | `--full-doc` mode's direct PDF text extraction; no chunking or embeddings involved |
+| Claude (Anthropic API) | network | every `ask.py` call, any mode — the only step that needs `ANTHROPIC_API_KEY` |
+| Hugging Face Hub | network | metadata/version checks when loading the embedding model, on both ingest and default RAG mode |

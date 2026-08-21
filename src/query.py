@@ -1,4 +1,6 @@
-"""Answer questions about ingested manuals via Claude, in RAG or no-RAG mode.
+"""Answer questions about ingested manuals via Claude, in one of three modes:
+RAG (retrieved chunks), full-doc (the entire manual(s), no retrieval), or
+no-context (bare question, no manual content at all - baseline).
 
 Heavy third-party imports (llama_index, chromadb) are kept inside the
 functions that need them, not at module level, so this module - and the
@@ -39,6 +41,23 @@ def _build_llm():
     return Anthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY)
 
 
+def _load_manual_texts() -> list[tuple[str, str]]:
+    """Extract raw text from every manual PDF, for full-doc mode.
+
+    Deliberately independent of the Chroma index/embedding pipeline - this
+    reads PDFs directly with pypdf, no chunking or vector search involved.
+    Returns a list of (file_name, full_text) pairs, sorted by filename.
+    """
+    import pypdf
+
+    manuals = []
+    for path in sorted(config.MANUALS_DIR.glob("*.pdf")):
+        reader = pypdf.PdfReader(path)
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        manuals.append((path.name, text))
+    return manuals
+
+
 def ask_rag(question: str) -> dict:
     index = load_manuals_index()
     nodes = index.as_retriever(similarity_top_k=SIMILARITY_TOP_K).retrieve(question)
@@ -64,7 +83,27 @@ def ask_rag(question: str) -> dict:
     return {"answer": str(response), "sources": sources}
 
 
-def ask_no_rag(question: str) -> dict:
+def ask_full_doc(question: str) -> dict:
+    manuals = _load_manual_texts()
+
+    if not manuals:
+        return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
+
+    # No retrieval, no chunking - every manual's full text goes into context,
+    # in filename order. Larger and costlier per call than RAG mode's top-k
+    # chunks, but nothing gets split across a chunk boundary or dropped for
+    # not matching the query closely enough.
+    context = "\n\n".join(text for _, text in manuals)
+    prompt = build_context_prompt(question, context)
+
+    llm = _build_llm()
+    response = llm.complete(prompt)
+
+    sources = [name for name, _ in manuals]
+    return {"answer": str(response), "sources": sources}
+
+
+def ask_no_context(question: str) -> dict:
     llm = _build_llm()
     response = llm.complete(question)
     return {"answer": str(response), "sources": []}

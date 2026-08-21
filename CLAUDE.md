@@ -61,9 +61,10 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    move the change to `openspec/changes/archive/` and sync its delta specs
    into `openspec/specs/`.
 9. Other changes under `openspec/changes/` (`interactive-cli`,
-   `pluggable-llm-backend`, `openai-embeddings-option`, `sample-corpus-sourcing`)
-   are proposal-only stubs for deferred work — do not implement them alongside
-   `rag-tfm-mvp` unless the user explicitly asks to pull one in.
+   `pluggable-llm-backend`, `openai-embeddings-option`, `sample-corpus-sourcing`,
+   `rag-context-continuity`, `retrieval-technique-selector`) are proposal-only
+   stubs for deferred work — do not implement them alongside `rag-tfm-mvp`
+   unless the user explicitly asks to pull one in.
 
 ## Guardrails specific to this project
 

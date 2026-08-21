@@ -51,11 +51,11 @@ class FakeIndex:
         return FakeRetriever(self._nodes)
 
 
-def test_ask_no_rag_returns_llm_answer(monkeypatch):
+def test_ask_no_context_returns_llm_answer(monkeypatch):
     fake_llm = FakeLLM("Paris is the capital of France.")
     monkeypatch.setattr(query, "_build_llm", lambda: fake_llm)
 
-    result = query.ask_no_rag("What is the capital of France?")
+    result = query.ask_no_context("What is the capital of France?")
 
     assert result == {"answer": "Paris is the capital of France.", "sources": []}
     assert fake_llm.prompts_seen == ["What is the capital of France?"]
@@ -93,3 +93,37 @@ def test_ask_rag_builds_context_prompt_and_dedupes_sources(monkeypatch):
     assert "How do I set up a new filter?" in prompt
     assert "Soak the cartridge for 15 minutes." in prompt
     assert "Rinse under running water." in prompt
+
+
+def test_ask_full_doc_with_no_manuals_skips_llm_call(monkeypatch):
+    monkeypatch.setattr(query, "_load_manual_texts", lambda: [])
+
+    def fail_if_called():
+        raise AssertionError("LLM should not be called when there are no manuals")
+
+    monkeypatch.setattr(query, "_build_llm", fail_if_called)
+
+    result = query.ask_full_doc("What is the warranty period?")
+
+    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": []}
+
+
+def test_ask_full_doc_sends_every_manual_in_full(monkeypatch):
+    manuals = [
+        ("manual-a.pdf", "Soak the cartridge for 15 minutes before use."),
+        ("manual-b.pdf", "Replace the cartridge every two months."),
+    ]
+    fake_llm = FakeLLM("Soak for 15 minutes; replace every two months.")
+
+    monkeypatch.setattr(query, "_load_manual_texts", lambda: manuals)
+    monkeypatch.setattr(query, "_build_llm", lambda: fake_llm)
+
+    result = query.ask_full_doc("How do I care for the filter?")
+
+    assert result["answer"] == "Soak for 15 minutes; replace every two months."
+    assert result["sources"] == ["manual-a.pdf", "manual-b.pdf"]
+    assert len(fake_llm.prompts_seen) == 1
+    prompt = fake_llm.prompts_seen[0]
+    assert "How do I care for the filter?" in prompt
+    assert "Soak the cartridge for 15 minutes before use." in prompt
+    assert "Replace the cartridge every two months." in prompt
