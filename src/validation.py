@@ -5,9 +5,10 @@ so they stay unit-testable without installing the full embeddings/vector-store s
 from pathlib import Path
 
 
-def validate_manuals_dir(manuals_dir: Path) -> None:
-    if not manuals_dir.exists() or not any(manuals_dir.glob("*.pdf")):
+def validate_manual_path(manual_path: Path) -> None:
+    if not manual_path.exists() or manual_path.suffix.lower() != ".pdf":
         raise SystemExit(
-            f"No PDF manuals found in {manuals_dir}. "
-            "Add at least one PDF file to that directory before running ingestion."
+            f"Not a PDF file: {manual_path}. "
+            "Pass the path to a single PDF manual, e.g. "
+            "`python -m src.ingest data/manuals/your-manual.pdf`."
         )

@@ -42,8 +42,8 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    deps (a real PDF, a real Anthropic call, the Langfuse UI) — that stays as
    is, it's not being replaced. Alongside that, add `tests/` pytest coverage
    for the cheap, dependency-light logic in each section (guard clauses,
-   config wiring, parsing/formatting) — e.g. `src/ingest.py`'s
-   `validate_manuals_dir` is a plain function tests exercise directly, while
+   config wiring, parsing/formatting) — e.g. `src/validation.py`'s
+   `validate_manual_path` is a plain function tests exercise directly, while
    the actual embedding/Chroma/LLM calls stay manual-only. Keep heavy
    third-party imports (`llama_index`, `chromadb`, embedding libs) inside the
    functions that need them rather than at module level, so importing the
@@ -75,9 +75,13 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
   `tasks.md` 7.8 explicitly calls this out as needing separate confirmation.
 - Repo is not "clone and run" out of the box until a sample corpus exists —
   this is an accepted trade-off, not a bug to fix silently.
-- If a worktree/checkout lives under a hidden ancestor directory (e.g.
-  `.claude/worktrees/<name>/`), `SimpleDirectoryReader`'s default
-  `exclude_hidden=True` treats every file under it as hidden and skips it —
-  `src/ingest.py` already passes `exclude_hidden=False` to work around this;
-  don't revert that without re-checking ingestion still finds manuals from
-  such a checkout.
+- `src/ingest.py` takes the manual's path as an explicit CLI argument
+  (`python -m src.ingest <manual.pdf>`), never a directory scan — the app
+  only ever indexes one manual at a time. This also sidesteps an earlier
+  quirk where `SimpleDirectoryReader`'s `exclude_hidden=True` default
+  treated any hidden ancestor path segment (e.g. a worktree under
+  `.claude/worktrees/<name>/`) as reason to skip every file under it —
+  `input_files=[path]` doesn't walk the directory tree at all, so that
+  check never runs. If ingestion ever goes back to directory-based
+  discovery, re-check that quirk before relying on `exclude_hidden`'s
+  default.

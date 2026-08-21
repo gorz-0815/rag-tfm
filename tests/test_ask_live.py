@@ -45,6 +45,9 @@ def test_ask_no_context_gets_a_real_answer():
     assert result["sources"] == []
 
 
+SAMPLE_MANUAL = config.MANUALS_DIR / "aquaflow-200-manual.pdf"
+
+
 def test_ask_rag_gets_a_real_grounded_answer(tmp_path, monkeypatch):
     from src.ingest import build_index
     from src.query import ask_rag
@@ -54,8 +57,22 @@ def test_ask_rag_gets_a_real_grounded_answer(tmp_path, monkeypatch):
 
     monkeypatch.setattr(config, "STORAGE_DIR", tmp_path / "storage")
 
-    build_index()
+    build_index(SAMPLE_MANUAL)
     result = ask_rag("How long should I soak a new filter cartridge before using it?")
+
+    assert "15" in result["answer"]
+    assert result["sources"] == ["aquaflow-200-manual.pdf"]
+
+
+def test_ask_full_doc_gets_a_real_grounded_answer():
+    from src.query import ask_full_doc
+
+    if not config.ANTHROPIC_API_KEY:
+        pytest.skip("ANTHROPIC_API_KEY is not set")
+
+    result = ask_full_doc(
+        "How long should I soak a new filter cartridge before using it?", SAMPLE_MANUAL
+    )
 
     assert "15" in result["answer"]
     assert result["sources"] == ["aquaflow-200-manual.pdf"]
