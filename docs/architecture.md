@@ -1,23 +1,27 @@
 # RAG pipeline anatomy
 
-Two separate runs make up this project: `python -m src.ingest` builds the
-vector index once, offline; `python -m src.ask` answers a question against
-it every time you run it. The diagrams below trace what each one actually
-touches — including which hops are local computation and which leave the
-machine.
+This app works with **one manual at a time** — the file is always named
+explicitly on the command line, never auto-discovered from a directory.
+Two separate runs make up the pipeline: `python -m src.ingest <manual.pdf>`
+builds the vector index once, offline; `python -m src.ask` answers a
+question against it every time you run it. The diagrams below trace what
+each one actually touches — including which hops are local computation and
+which leave the machine.
 
-## Ingest-time (`python -m src.ingest`, run once per manual set)
+## Ingest-time (`python -m src.ingest <manual.pdf>`, run once per manual)
 
-Reads every PDF under `data/manuals/`, splits each into overlapping chunks,
-embeds each chunk with a local sentence-transformer, and writes the
-resulting vectors to a persistent Chroma collection on disk.
+Loads the one PDF named on the command line, splits it into overlapping
+chunks, embeds each chunk with a local sentence-transformer, and writes the
+resulting vectors to a persistent Chroma collection on disk — replacing
+whatever was indexed before, so the collection always reflects exactly one
+manual, never a mix of a prior one and a new one.
 
 ```mermaid
 flowchart LR
-    A["data/manuals/*.pdf"] -->|load| B["SimpleDirectoryReader"]
+    A["manual.pdf\n(named on the CLI)"] -->|load| B["SimpleDirectoryReader\n(input_files=[path])"]
     B -->|"~512 tok chunks, 64 tok overlap"| C["SentenceSplitter"]
     C -->|embed each chunk| D["bge-small-en-v1.5\n(local embedding model)"]
-    D -->|persist vectors| E[("Chroma\nstorage/")]
+    D -->|"replace collection, persist vectors"| E[("Chroma\nstorage/")]
 
     style D fill:#0f8b8d,stroke:#075355,color:#ffffff
     style E fill:#0f8b8d,stroke:#075355,color:#ffffff
@@ -33,10 +37,13 @@ Three mutually exclusive modes, chosen by CLI flag:
 - **`--no-context`** sends **only the bare question string** to Claude as the
   completion prompt — no manual content of any kind, not even the raw PDF
   text, is attached. A purely un-grounded baseline.
-- **`--full-doc`** skips retrieval entirely and sends **every manual's full
-  extracted text** (via `pypdf`, no chunking/embedding involved) as context.
-  No Chroma, no embedding model — but every manual's full text goes into the
-  prompt on every call, which is bigger and costlier than RAG's top-4 chunks.
+- **`--full-doc MANUAL_PATH`** skips retrieval entirely and sends the named
+  manual's **full extracted text** (via `pypdf`, no chunking/embedding
+  involved) as context. No Chroma, no embedding model — but the entire
+  manual's text goes into the prompt on every call, bigger and costlier than
+  RAG's top-4 chunks. Independent of whatever's currently ingested — reads
+  the PDF fresh each call, so the path doesn't need to match `storage/`'s
+  contents.
 - **default (RAG)** re-embeds the question with the *same* local model used
   at ingest time — embeddings from two different models aren't comparable —
   retrieves the top 4 chunks from Chroma, joins their raw text into a single
@@ -50,11 +57,11 @@ flowchart TD
     CLI -->|"--no-context"| NR["Claude (Anthropic API)\nprompt = question only"]
     NR --> A1["answer\n(no sources, no manual content sent)"]
 
-    CLI -->|"--full-doc"| PDF["pypdf: extract full text\nof every manual"]
-    PDF -->|manuals found| FCTX["PROMPT_TEMPLATE.md\nfull text of every manual + question"]
-    PDF -->|"no manuals"| NOCTX2["NO_CONTEXT_MESSAGE\n(Claude never called)"]
+    CLI -->|"--full-doc PATH"| PDF["pypdf: extract full text\nof the named manual"]
+    PDF -->|manual found| FCTX["PROMPT_TEMPLATE.md\nfull manual text + question"]
+    PDF -->|"path doesn't exist"| NOCTX2["NO_CONTEXT_MESSAGE\n(Claude never called)"]
     FCTX --> FLLM["Claude (Anthropic API)\nprompt = template w/ full text + question"]
-    FLLM --> A3["answer + every manual cited"]
+    FLLM --> A3["answer + manual cited"]
 
     CLI -->|"default: RAG"| EMB["bge-small-en-v1.5\nre-embed the question"]
     EMB --> RET["Chroma retriever\ntop 4 chunks by similarity"]
@@ -90,7 +97,7 @@ once and reused across questions instead of reloaded per invocation.
 | Component | Runs | Used by |
 |---|---|---|
 | `bge-small-en-v1.5` | local | ingest (embed chunks) & default RAG mode (embed question) — must match on both sides |
-| Chroma / `storage/` | local | persists chunk vectors; read by the retriever in RAG mode only |
+| Chroma / `storage/` | local | persists one manual's chunk vectors at a time; replaced (not appended to) on every ingest; read by the retriever in RAG mode only |
 | `pypdf` | local | `--full-doc` mode's direct PDF text extraction; no chunking or embeddings involved |
 | Claude (Anthropic API) | network | every `ask.py` call, any mode — the only step that needs `ANTHROPIC_API_KEY` |
 | Hugging Face Hub | network | metadata/version checks when loading the embedding model, on both ingest and default RAG mode |

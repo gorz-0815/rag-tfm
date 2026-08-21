@@ -12,13 +12,13 @@
 
 ## 3. Manual Ingestion (`manual-ingestion` capability)
 
-- [x] 3.1 Implement `src/ingest.py`: load PDFs via SimpleDirectoryReader/pypdf from a configurable manuals directory
+- [x] 3.1 Implement `src/ingest.py`: load a PDF via SimpleDirectoryReader/pypdf — originally from a configurable manuals directory (auto-discovered), **revised in PR #7 review to take the manual's path as an explicit CLI argument instead** (`python -m src.ingest <manual.pdf>`); the app only ever indexes one manual at a time, never a directory-wide corpus
 - [x] 3.2 Chunk with `SentenceSplitter`, chunk_size/overlap read from `src/config.py`/env (defaults 512/64 per design.md)
 - [x] 3.3 Embed chunks with local HF embedding model (`BAAI/bge-small-en-v1.5` or similar) via `llama-index-embeddings-huggingface`
-- [x] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion
+- [x] 3.4 Persist index to Chroma-backed `storage/`, rebuildable by re-running ingestion — **revised in PR #7 review: each ingest replaces the collection rather than appending, so re-ingesting a different manual can't leave stale chunks from a prior one**
 - [x] 3.5 Ensure chunk metadata retains source manual filename
-- [x] 3.6 Handle empty/missing manuals directory with a clear error (per spec scenario)
-- [x] 3.7 Verify: run ingestion against a locally-supplied test PDF in `data/manuals/` (not committed), confirm `storage/` is created and contains its chunks
+- [x] 3.6 Handle a missing/non-PDF manual path with a clear error (per spec scenario; revised for the single-file argument, was originally "empty/missing manuals directory")
+- [x] 3.7 Verify: run ingestion against a locally-supplied test PDF, confirm `storage/` is created and contains its chunks
 
 ## 4. Manual QA CLI (`manual-qa-cli` capability)
 
@@ -28,8 +28,8 @@
 - [x] 4.4 Implement no-context mode flag (`--no-context`, renamed from `--no-rag` per review): send only the question to Claude, no retrieval, no citations
 - [x] 4.5 Handle no-relevant-content case: if retrieval returns nothing usable, say so rather than fabricating an answer
 - [x] 4.6 Verify: ask a manual-specific question in RAG mode (grounded, cited answer) and the same question in no-context mode (baseline, uncited) — verified 2026-08-20 against `data/manuals/aquaflow-200-manual.pdf`: RAG mode answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`; no-context mode gave a generic, product-agnostic, uncited answer that contradicted the manual
-- [x] 4.7 Implement full-document mode flag (`--full-doc`, added per review): send every manual's full extracted text as context, no retrieval/chunking, cite every manual
-- [x] 4.8 Verify: ask a manual-specific question in full-doc mode and confirm it returns a grounded answer citing every manual in `data/manuals/` — verified 2026-08-21: `--full-doc` answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`
+- [x] 4.7 Implement full-document mode flag (`--full-doc MANUAL_PATH`, added per review, revised to a named path rather than a directory-wide scan): send the named manual's full extracted text as context, no retrieval/chunking, cite that manual
+- [x] 4.8 Verify: ask a manual-specific question in full-doc mode and confirm it returns a grounded answer citing the named manual — verified 2026-08-21: `--full-doc data/manuals/aquaflow-200-manual.pdf` answered "soak in cold water for 15 minutes" with `Sources: aquaflow-200-manual.pdf`
 
 ## 5. Query Tracing (`query-tracing` capability)
 

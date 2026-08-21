@@ -4,11 +4,14 @@ A small hand-written question set for exercising `python -m src.ask` against
 the synthetic `data/manuals/aquaflow-200-manual.pdf` manual (see its header
 comment for provenance: generated for this repo, not a real product).
 
-Run each across all three modes to compare grounded, full-doc, and baseline answers:
+First ingest the manual, then run each question across all three modes to
+compare grounded, full-doc, and baseline answers:
 
 ```
+python -m src.ingest data/manuals/aquaflow-200-manual.pdf
+
 python -m src.ask "How long should I soak a new filter cartridge before using it?"
-python -m src.ask "How long should I soak a new filter cartridge before using it?" --full-doc
+python -m src.ask "How long should I soak a new filter cartridge before using it?" --full-doc data/manuals/aquaflow-200-manual.pdf
 python -m src.ask "How long should I soak a new filter cartridge before using it?" --no-context
 ```
 
