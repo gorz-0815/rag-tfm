@@ -17,3 +17,14 @@ repos:
         language: system
         pass_filenames: false
         files: ^openspec/
+      - id: no-process-comments
+        name: no process narration in code comments
+        description: >-
+          Comments describe current state, not history - no PR/commit
+          references, no "originally"/"revised"/"now removed".
+        entry: >-
+          bash -c '! grep -nE
+          "PR #[0-9]+|\bcommit [0-9a-f]{7,40}\b|now[- ]removed|\boriginally\b|\brevised (in|to|for)\b|\bper (the )?review\b"
+          "$@"' --
+        language: system
+        files: ^(src|tests)/.*\.py$
