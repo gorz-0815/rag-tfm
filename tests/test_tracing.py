@@ -90,11 +90,17 @@ def test_traced_span_delegates_to_client(monkeypatch):
     calls = []
 
     class FakeSpan:
+        def __init__(self):
+            self.updates = []
+
         def __enter__(self):
             return self
 
         def __exit__(self, *exc_info):
             return False
+
+        def update(self, **kwargs):
+            self.updates.append(kwargs)
 
     class FakeClient:
         def start_as_current_observation(self, **kwargs):
