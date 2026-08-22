@@ -10,8 +10,8 @@ compare grounded, full-doc, and baseline answers:
 ```
 python -m src.ingest data/manuals/aquaflow-200-manual.pdf
 
-python -m src.ask "How long should I soak a new filter cartridge before using it?"
-python -m src.ask "How long should I soak a new filter cartridge before using it?" --full-doc data/manuals/aquaflow-200-manual.pdf
+python -m src.ask "How long should I soak a new filter cartridge before using it?" data/manuals/aquaflow-200-manual.pdf
+python -m src.ask "How long should I soak a new filter cartridge before using it?" data/manuals/aquaflow-200-manual.pdf --full-doc
 python -m src.ask "How long should I soak a new filter cartridge before using it?" --no-context
 ```
 

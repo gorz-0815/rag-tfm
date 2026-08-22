@@ -58,7 +58,9 @@ def test_ask_rag_gets_a_real_grounded_answer(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "STORAGE_DIR", tmp_path / "storage")
 
     build_index(SAMPLE_MANUAL)
-    result = ask_rag("How long should I soak a new filter cartridge before using it?")
+    result = ask_rag(
+        "How long should I soak a new filter cartridge before using it?", SAMPLE_MANUAL
+    )
 
     assert "15" in result["answer"]
     assert result["sources"] == ["aquaflow-200-manual.pdf"]

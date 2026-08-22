@@ -5,15 +5,19 @@ Turns a single text-based PDF technical manual, named explicitly by the caller, 
 ## ADDED Requirements
 
 ### Requirement: Ingest a single named PDF manual into a local vector index
-The system SHALL take the path to one PDF manual as an explicit argument (never auto-discovered from a directory), split it into chunks, embed each chunk with a local (non-API) embedding model, and persist the result as a local vector index that can be reused across CLI invocations without re-ingesting.
+The system SHALL take the path to one PDF manual as an explicit argument (never auto-discovered from a directory), split it into chunks, embed each chunk with a local (non-API) embedding model, and persist the result as a local vector index, keyed by the manual's content so re-ingesting an unchanged manual reuses the existing index instead of re-embedding.
 
 #### Scenario: Successful ingestion of a named manual
 - **WHEN** the ingestion command is run with the path to a PDF manual
 - **THEN** a persisted local vector index is created on disk containing that manual's chunks, and the command exits successfully
 
+#### Scenario: Re-running ingestion with an unchanged manual
+- **WHEN** ingestion is re-run with the same manual (unchanged content)
+- **THEN** the existing index is reused with no re-embedding
+
 #### Scenario: Re-running ingestion with a different manual
-- **WHEN** ingestion is re-run with a different manual's path than the one currently indexed
-- **THEN** the persisted index is replaced with the new manual's chunks — the previous manual's chunks are not retained alongside it
+- **WHEN** ingestion is run with a different manual than one already indexed
+- **THEN** that manual gets its own index, independent of any other manual's index already on disk
 
 #### Scenario: Ingestion path does not point to a PDF
 - **WHEN** the given path does not exist or is not a PDF file
