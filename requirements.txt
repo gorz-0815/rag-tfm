@@ -5,6 +5,7 @@ llama-index-vector-stores-chroma
 llama-index-readers-file
 chromadb
 langfuse
+openinference-instrumentation-llama-index
 ragas
 langchain-anthropic
 pypdf

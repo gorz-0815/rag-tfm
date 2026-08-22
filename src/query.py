@@ -6,7 +6,7 @@ Heavy third-party imports are kept inside the functions that need them, not
 at module level, so this module stays importable without the full stack.
 """
 
-from src import config, vector_store
+from src import config, tracing, vector_store
 from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt, load_system_prompt
 
 # Number of top-ranked chunks retrieved per question and passed to the LLM
@@ -89,7 +89,8 @@ def ask_full_doc(question: str, manual_path) -> dict:
     if not manual_path.exists():
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
-    context = _load_manual_text(manual_path)
+    with tracing.traced_span("extract_manual_text", manual_path=str(manual_path)):
+        context = _load_manual_text(manual_path)
     user_prompt = build_context_prompt(question, context)
 
     answer = _ask_with_context(user_prompt)

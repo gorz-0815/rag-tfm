@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 
+from src import tracing
 from src.query import ask_full_doc, ask_no_context, ask_rag
 
 
@@ -33,18 +34,31 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    tracing.init_tracing()
+
     if args.no_context:
-        result = ask_no_context(args.question)
+        mode = "no_context"
     elif not args.manual_path:
         parser.error("manual_path is required unless --no-context is given")
+        return
     elif args.full_doc:
-        result = ask_full_doc(args.question, args.manual_path)
+        mode = "full_doc"
     else:
-        result = ask_rag(args.question, args.manual_path)
+        mode = "rag"
+
+    with tracing.traced_span(f"ask_{mode}", question=args.question):
+        if mode == "no_context":
+            result = ask_no_context(args.question)
+        elif mode == "full_doc":
+            result = ask_full_doc(args.question, args.manual_path)
+        else:
+            result = ask_rag(args.question, args.manual_path)
 
     print(result["answer"])
     if result["sources"]:
         print("\nSources: " + ", ".join(result["sources"]))
+
+    tracing.flush_tracing()
 
 
 if __name__ == "__main__":
