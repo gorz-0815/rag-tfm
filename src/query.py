@@ -2,10 +2,8 @@
 modes: RAG (retrieved chunks), full-doc (the entire manual, no retrieval), or
 no-context (bare question, no manual content at all - baseline).
 
-Heavy third-party imports (llama_index, chromadb) are kept inside the
-functions that need them, not at module level, so this module - and the
-mocked tests in tests/test_query.py - can be imported without the full
-embeddings/vector-store stack installed. See CLAUDE.md #7.
+Heavy third-party imports are kept inside the functions that need them, not
+at module level, so this module stays importable without the full stack.
 """
 
 from src import config
@@ -42,12 +40,8 @@ def _build_llm():
 
 
 def _ask_with_context(user_prompt: str) -> str:
-    """Send a real Anthropic `system` message (SYSTEM_PROMPT.md) plus the
-    context+question user turn (PROMPT_TEMPLATE.md), via llm.chat() - not
-    llm.complete(), which never applies a system message at all. Shared by
-    ask_rag and ask_full_doc; ask_no_context deliberately doesn't use this,
-    since sending "answer using only the context below" makes no sense when
-    there's no context.
+    """Send SYSTEM_PROMPT.md as the system message and user_prompt as the
+    user turn. Used by ask_rag and ask_full_doc, not ask_no_context.
     """
     from llama_index.core.llms import ChatMessage, MessageRole
 
@@ -80,14 +74,8 @@ def ask_rag(question: str) -> dict:
     if not nodes:
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
-    # Only the top SIMILARITY_TOP_K retrieved chunks go into context, not the whole
-    # manual - smaller than no-context's implicit "whatever Claude already knows",
-    # but also smaller than the source document. Chunks are joined in
-    # retrieval-rank (relevance) order, not their original position in the
-    # manual, and each is a fixed-size window (see config.CHUNK_SIZE/
-    # CHUNK_OVERLAP) - so if an answer spans two non-adjacent chunks, or a
-    # procedure gets split across a chunk boundary, the model only sees the
-    # disjoint fragments and has to reason across that gap itself.
+    # Chunks are joined in retrieval-rank order, not document order - an
+    # answer split across non-adjacent chunks may read as disjoint fragments.
     context = "\n\n".join(node.get_content() for node in nodes)
     user_prompt = build_context_prompt(question, context)
 
@@ -104,10 +92,6 @@ def ask_full_doc(question: str, manual_path) -> dict:
     if not manual_path.exists():
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
-    # No retrieval, no chunking - the manual's entire text goes into context.
-    # Larger and costlier per call than RAG mode's top-k chunks, but nothing
-    # gets split across a chunk boundary or dropped for not matching the
-    # query closely enough.
     context = _load_manual_text(manual_path)
     user_prompt = build_context_prompt(question, context)
 

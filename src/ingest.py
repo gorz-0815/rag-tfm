@@ -1,8 +1,7 @@
 """Ingest a single PDF manual into a local Chroma-backed vector index.
 
-Heavy third-party imports (llama_index, chromadb) are kept inside build_index(),
-not at module level, so this module can be imported - e.g. by tests/test_ask_live.py
-- without the full embeddings/vector-store stack installed. See CLAUDE.md #7.
+Heavy third-party imports are kept inside build_index(), not at module
+level, so this module stays importable without the full stack installed.
 """
 
 import argparse
@@ -23,9 +22,6 @@ def build_index(manual_path: Path):
 
     validate_manual_path(manual_path)
 
-    # input_files (a single explicit file), not input_dir - no directory walk,
-    # so there's no hidden-ancestor-directory pitfall to work around here (see
-    # the now-removed exclude_hidden=False workaround this replaced).
     documents = SimpleDirectoryReader(input_files=[str(manual_path)]).load_data()
 
     Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
@@ -34,9 +30,7 @@ def build_index(manual_path: Path):
     )
 
     chroma_client = chromadb.PersistentClient(path=str(config.STORAGE_DIR))
-    # Only one manual is ever indexed at a time - replace the collection on
-    # every ingest rather than appending, so re-ingesting a different manual
-    # can't leave stale chunks from a prior one mixed into retrieval.
+    # Replace, don't append - the collection holds exactly one manual.
     with contextlib.suppress(chromadb.errors.NotFoundError):
         chroma_client.delete_collection("manuals")
     chroma_collection = chroma_client.create_collection("manuals")
