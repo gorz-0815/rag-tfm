@@ -7,9 +7,8 @@ import hashlib
 from pathlib import Path
 
 
-def manual_collection_name(manual_path: Path) -> str:
-    digest = hashlib.sha256(Path(manual_path).read_bytes()).hexdigest()[:16]
-    return f"manual_{digest}"
+def manual_hash_id(manual_path: Path) -> str:
+    return hashlib.sha256(Path(manual_path).read_bytes()).hexdigest()[:16]
 
 
 def validate_manual_path(manual_path: Path) -> None:

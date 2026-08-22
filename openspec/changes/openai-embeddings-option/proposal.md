@@ -16,4 +16,4 @@
 
 ## Impact
 
-Not assessed yet. Open questions: whether this shares the same backend-selection mechanism as `pluggable-llm-backend` or is independent; which hosted embedding provider(s) to support beyond OpenAI.
+Not assessed yet. Open questions: whether this shares the same backend-selection mechanism as `pluggable-llm-backend` or is independent; which hosted embedding provider(s) to support beyond OpenAI. `src/vector_store.py` (added PR #7) already isolates embedding-model/vector-store access behind `configure_embed_model()`/`get_existing_collection()`/`create_collection()` — swapping the embedding backend should mean changing that module, not `ingest.py`/`query.py`.

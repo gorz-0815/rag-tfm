@@ -7,38 +7,29 @@ level, so this module stays importable without the full stack installed.
 import argparse
 from pathlib import Path
 
-from src import config
-from src.validation import manual_collection_name, validate_manual_path
+from src import config, vector_store
+from src.validation import validate_manual_path
 
 
 def build_index(manual_path: Path) -> None:
-    import chromadb
-    import chromadb.errors
     from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, VectorStoreIndex
     from llama_index.core.node_parser import SentenceSplitter
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-    from llama_index.vector_stores.chroma import ChromaVectorStore
 
     validate_manual_path(manual_path)
-    collection_name = manual_collection_name(manual_path)
 
-    chroma_client = chromadb.PersistentClient(path=str(config.STORAGE_DIR))
-    try:
-        chroma_client.get_collection(collection_name)
+    if vector_store.get_existing_collection(manual_path) is not None:
         return
-    except chromadb.errors.NotFoundError:
-        pass
 
     documents = SimpleDirectoryReader(input_files=[str(manual_path)]).load_data()
 
-    Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
+    vector_store.configure_embed_model()
     Settings.node_parser = SentenceSplitter(
         chunk_size=config.CHUNK_SIZE, chunk_overlap=config.CHUNK_OVERLAP
     )
 
-    chroma_collection = chroma_client.create_collection(collection_name)
-    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+    storage_context = StorageContext.from_defaults(
+        vector_store=vector_store.create_collection(manual_path)
+    )
 
     VectorStoreIndex.from_documents(documents, storage_context=storage_context)
 

@@ -6,9 +6,8 @@ Heavy third-party imports are kept inside the functions that need them, not
 at module level, so this module stays importable without the full stack.
 """
 
-from src import config
+from src import config, vector_store
 from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt, load_system_prompt
-from src.validation import manual_collection_name
 
 # Number of top-ranked chunks retrieved per question and passed to the LLM
 # as context in RAG mode (see ask_rag's similarity_top_k usage below).
@@ -20,22 +19,15 @@ def load_manuals_index(manual_path):
 
     Raises if that manual hasn't been ingested yet.
     """
-    import chromadb
-    import chromadb.errors
-    from llama_index.core import Settings, VectorStoreIndex
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-    from llama_index.vector_stores.chroma import ChromaVectorStore
+    from llama_index.core import VectorStoreIndex
 
-    Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
-    chroma_client = chromadb.PersistentClient(path=str(config.STORAGE_DIR))
-    try:
-        chroma_collection = chroma_client.get_collection(manual_collection_name(manual_path))
-    except chromadb.errors.NotFoundError as e:
+    vector_store.configure_embed_model()
+    store = vector_store.get_existing_collection(manual_path)
+    if store is None:
         raise SystemExit(
             f"No index found for {manual_path}. Run `python -m src.ingest {manual_path}` first."
-        ) from e
-    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    return VectorStoreIndex.from_vector_store(vector_store)
+        )
+    return VectorStoreIndex.from_vector_store(store)
 
 
 def _build_llm():
