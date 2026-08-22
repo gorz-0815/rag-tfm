@@ -1,10 +1,10 @@
 ## Why
 
-`rag-tfm-mvp` ships a single-shot `ask` command only. A richer CLI (ask multiple questions in one session, see retrieved sources inline, switch between RAG/no-RAG mode without re-invoking the process) was explicitly wanted long-term but deferred to keep the MVP small and finishable, and review feedback (PR #1) asked for it to be tracked so it isn't lost. This is a stub to track the idea, not a committed design.
+`rag-tfm-mvp` ships a single-shot `ask` command only. A richer CLI (ask multiple questions in one session, see retrieved sources inline, switch between RAG/no-context mode without re-invoking the process) was explicitly wanted long-term but deferred to keep the MVP small and finishable, and review feedback (PR #1) asked for it to be tracked so it isn't lost. This is a stub to track the idea, not a committed design.
 
 ## What Changes
 
-- (Not designed yet.) Rough shape: a session/REPL-style CLI entry point alongside the single-shot `ask` command, in-session RAG/no-RAG mode switching, and a way to inspect retrieved chunks/citations without leaving the session.
+- (Not designed yet.) Rough shape: a session/REPL-style CLI entry point alongside the single-shot `ask` command, in-session RAG/no-context mode switching, and a way to inspect retrieved chunks/citations without leaving the session.
 
 ## Capabilities
 

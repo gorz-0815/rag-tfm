@@ -1,7 +1,7 @@
 # rag-tfm — agent workflow
 
 Small RAG demo (ingest PDF manuals, cited Q&A, Langfuse tracing, Ragas eval vs.
-no-RAG baseline). Planning is done; implementation happens through OpenSpec.
+no-context baseline). Planning is done; implementation happens through OpenSpec.
 
 ## How work flows
 
@@ -42,13 +42,18 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
    deps (a real PDF, a real Anthropic call, the Langfuse UI) — that stays as
    is, it's not being replaced. Alongside that, add `tests/` pytest coverage
    for the cheap, dependency-light logic in each section (guard clauses,
-   config wiring, parsing/formatting) — e.g. `src/ingest.py`'s
-   `validate_manuals_dir` is a plain function tests exercise directly, while
+   config wiring, parsing/formatting) — e.g. `src/validation.py`'s
+   `validate_manual_path` is a plain function tests exercise directly, while
    the actual embedding/Chroma/LLM calls stay manual-only. Keep heavy
    third-party imports (`llama_index`, `chromadb`, embedding libs) inside the
    functions that need them rather than at module level, so importing the
    module for a unit test doesn't require the full dependency stack to be
    installed. Tests live in `tests/`, mirroring `src/`.
+   For coverage that genuinely needs the real API/network (a live Anthropic
+   call, later a live Langfuse trace or Ragas run), add an opt-in test
+   gated on an env var (see `tests/test_ask_live.py`'s `RUN_LIVE_LLM_TESTS`)
+   — skipped by default so the normal suite never spends real money, run
+   explicitly when needed. Apply this same pattern to Section 5/6 tests.
 8. **Lint/format: Ruff, applied automatically via pre-commit.** Config is in
    `pyproject.toml` (`[tool.ruff]`); the hook is `language: system` (calls
    the `ruff` already in `requirements.txt`) rather than pre-commit's own
@@ -60,13 +65,24 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
 9. When every task in `tasks.md` is checked, use `openspec-archive-change` to
    move the change to `openspec/changes/archive/` and sync its delta specs
    into `openspec/specs/`.
-9. Other changes under `openspec/changes/` (`interactive-cli`,
-   `pluggable-llm-backend`, `openai-embeddings-option`, `sample-corpus-sourcing`)
-   are proposal-only stubs for deferred work — do not implement them alongside
-   `rag-tfm-mvp` unless the user explicitly asks to pull one in.
+10. Other changes under `openspec/changes/` (`interactive-cli`,
+    `pluggable-llm-backend`, `openai-embeddings-option`, `sample-corpus-sourcing`,
+    `rag-context-continuity`, `retrieval-technique-selector`) are proposal-only
+    stubs for deferred work — do not implement them alongside `rag-tfm-mvp`
+    unless the user explicitly asks to pull one in. **Before creating a new
+    stub for an idea raised in review, check whether an existing one already
+    covers it** (`ls openspec/changes/`) — extend/cross-reference it instead
+    of creating a duplicate. If the review comment asks for something to be
+    done now rather than just tracked (e.g. a refactor, not a future idea),
+    do it now; a stub is for deferring, not for dodging.
 
 ## Guardrails specific to this project
 
+- **Code comments describe current state, not how it got there.** No "was
+  X, changed to Y", no naming PRs/reviews/commits, no explaining removed
+  alternatives — that history belongs in the commit message, not the file.
+  If a comment isn't needed to understand the code as it stands today,
+  cut it rather than shrink it.
 - Never commit `.env`, `storage/`, or real contents of `data/manuals/` — the
   corpus is user-supplied and gitignored; only a `.gitkeep` belongs in git for
   now (see `sample-corpus-sourcing` stub for the eventual sample corpus).
@@ -74,3 +90,13 @@ no-RAG baseline). Planning is done; implementation happens through OpenSpec.
   `tasks.md` 7.8 explicitly calls this out as needing separate confirmation.
 - Repo is not "clone and run" out of the box until a sample corpus exists —
   this is an accepted trade-off, not a bug to fix silently.
+- `src/ingest.py` takes the manual's path as an explicit CLI argument
+  (`python -m src.ingest <manual.pdf>`), never a directory scan — the app
+  only ever indexes one manual at a time. This also sidesteps an earlier
+  quirk where `SimpleDirectoryReader`'s `exclude_hidden=True` default
+  treated any hidden ancestor path segment (e.g. a worktree under
+  `.claude/worktrees/<name>/`) as reason to skip every file under it —
+  `input_files=[path]` doesn't walk the directory tree at all, so that
+  check never runs. If ingestion ever goes back to directory-based
+  discovery, re-check that quirk before relying on `exclude_hidden`'s
+  default.

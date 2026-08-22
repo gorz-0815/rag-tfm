@@ -24,8 +24,9 @@ Work through a pull request's outstanding review comments systematically, one co
 5. **Use the platform's reply mechanism**, not a new top-level comment:
    - GitHub line comments: `gh api repos/<owner>/<repo>/pulls/<n>/comments -f body='<reply>' -F in_reply_to=<comment_id> -X POST` (replies into the same thread).
    - If the review is still pending (unsubmitted, only visible to its author), replies work the same way against comment IDs; don't submit/publish the review unless asked.
+   - **Prefix every reply body with `Claude: `.** Replies post under the user's own account/token (`gh` uses their auth), so without a marker a Claude-authored reply is visually indistinguishable from the human reviewer's own comments in the thread. The prefix is what makes it possible to tell them apart later.
 
-6. **Summarize when done.** Short list: which comments got a code change (+ what changed), which got a question (+ what was asked), any comment intentionally left untouched and why.
+6. **Summarize when done.** Short list: which comments got a code change (+ what changed), which got a question (+ what was asked), any comment intentionally left untouched and why. Note which addressed threads are ready to be marked resolved — but don't resolve them yourself; that's the user's call. A reply does *not* automatically mark a GitHub thread resolved (that's a separate GitHub action), so an addressed thread stays open until the user closes it, and that's expected, not a bug.
 
 ## Guardrails
 
@@ -33,3 +34,4 @@ Work through a pull request's outstanding review comments systematically, one co
 - Don't let "clear" become "clear enough" — if two readings of a comment would lead to materially different changes, it's ambiguous.
 - Preserve existing thread structure: reply in-thread, don't delete/recreate comments unless the user asks.
 - If a clear change would remove or contradict something another still-open comment depends on, flag that conflict in your reply rather than silently picking a side.
+- **Never resolve a review thread**, even one you fully addressed. Resolving is the user's decision to make, always — report it as done via your reply and let them close it.

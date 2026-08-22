@@ -1,38 +1,48 @@
-"""Ingest PDF manuals from data/manuals/ into a local Chroma-backed vector index."""
+"""Ingest a single PDF manual into a local Chroma-backed vector index.
 
-import chromadb
-from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.vector_stores.chroma import ChromaVectorStore
+Heavy third-party imports are kept inside build_index(), not at module
+level, so this module stays importable without the full stack installed.
+"""
 
-from src import config
-from src.validation import validate_manuals_dir
+import argparse
+from pathlib import Path
+
+from src import config, vector_store
+from src.validation import validate_manual_path
 
 
-def build_index() -> VectorStoreIndex:
-    validate_manuals_dir(config.MANUALS_DIR)
+def build_index(manual_path: Path) -> None:
+    from llama_index.core import Settings, SimpleDirectoryReader, StorageContext, VectorStoreIndex
+    from llama_index.core.node_parser import SentenceSplitter
 
-    documents = SimpleDirectoryReader(
-        input_dir=str(config.MANUALS_DIR), required_exts=[".pdf"]
-    ).load_data()
+    validate_manual_path(manual_path)
 
-    Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
+    if vector_store.get_existing_collection(manual_path) is not None:
+        return
+
+    documents = SimpleDirectoryReader(input_files=[str(manual_path)]).load_data()
+
+    vector_store.configure_embed_model()
     Settings.node_parser = SentenceSplitter(
         chunk_size=config.CHUNK_SIZE, chunk_overlap=config.CHUNK_OVERLAP
     )
 
-    chroma_client = chromadb.PersistentClient(path=str(config.STORAGE_DIR))
-    chroma_collection = chroma_client.get_or_create_collection("manuals")
-    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-    storage_context = StorageContext.from_defaults(vector_store=vector_store)
+    storage_context = StorageContext.from_defaults(
+        vector_store=vector_store.create_collection(manual_path)
+    )
 
-    return VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+    VectorStoreIndex.from_documents(documents, storage_context=storage_context)
 
 
 def main() -> None:
-    build_index()
-    print(f"Ingested manuals from {config.MANUALS_DIR} into {config.STORAGE_DIR}")
+    parser = argparse.ArgumentParser(
+        description="Ingest a single PDF manual into the vector index."
+    )
+    parser.add_argument("manual_path", type=Path, help="Path to the PDF manual to ingest")
+    args = parser.parse_args()
+
+    build_index(args.manual_path)
+    print(f"Index ready for {args.manual_path} in {config.STORAGE_DIR}")
 
 
 if __name__ == "__main__":
