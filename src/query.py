@@ -6,7 +6,7 @@ Heavy third-party imports are kept inside the functions that need them, not
 at module level, so this module stays importable without the full stack.
 """
 
-from src import config, vector_store
+from src import config, tracing, vector_store
 from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt, load_system_prompt
 
 # Number of top-ranked chunks retrieved per question and passed to the LLM
@@ -21,7 +21,8 @@ def load_manuals_index(manual_path):
     """
     from llama_index.core import VectorStoreIndex
 
-    vector_store.configure_embed_model()
+    with tracing.traced_span("load_embedding_model"):
+        vector_store.configure_embed_model()
     store = vector_store.get_existing_collection(manual_path)
     if store is None:
         raise SystemExit(
@@ -89,7 +90,13 @@ def ask_full_doc(question: str, manual_path) -> dict:
     if not manual_path.exists():
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
-    context = _load_manual_text(manual_path)
+    with tracing.traced_span("extract_manual_text", manual_path=str(manual_path)) as span:
+        context = _load_manual_text(manual_path)
+        if span is not None:
+            # The full text is already visible in Anthropic.chat's prompt input
+            # (build_context_prompt embeds it) - a preview here is enough to
+            # confirm extraction worked without duplicating the whole manual.
+            span.update(output={"char_count": len(context), "preview": context[:200]})
     user_prompt = build_context_prompt(question, context)
 
     answer = _ask_with_context(user_prompt)

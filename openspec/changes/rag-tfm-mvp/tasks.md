@@ -33,10 +33,10 @@
 
 ## 5. Query Tracing (`query-tracing` capability)
 
-- [ ] 5.1 Wire Langfuse's callback-based LlamaIndex handler into `Settings.callback_manager` (per design.md decision)
-- [ ] 5.2 Confirm all three query paths (RAG, full-doc, no-context) produce a trace (chunks/extraction/prompt/latency/tokens where applicable)
-- [ ] 5.3 Add graceful degradation: if Langfuse is unreachable, still return the answer and print a warning instead of failing
-- [ ] 5.4 Verify: run one query, confirm a matching trace appears in the Langfuse Cloud UI; capture a written walkthrough for `results/sample_trace.md`
+- [x] 5.1 Wire Langfuse tracing into the query paths — **revised from the original callback-based-handler plan**: `langfuse.llama_index.LlamaIndexCallbackHandler` no longer exists in installed `langfuse` v4 (Langfuse dropped its LlamaIndex-specific integration for third-party OTel instrumentation). Implemented via `src/tracing.py`: `openinference-instrumentation-llama-index`'s `LlamaIndexInstrumentor().instrument()` auto-captures retrieval and LLM calls process-wide; a manual `traced_span` covers full-doc mode's pypdf text extraction, which isn't a LlamaIndex operation. See revised `design.md` tracing-integration note.
+- [x] 5.2 Confirm all three query paths (RAG, full-doc, no-context) produce a trace (chunks/extraction/prompt/latency/tokens where applicable) — verified 2026-08-22 against `data/manuals/aquaflow-200-manual.pdf`; see `results/sample_trace.md`
+- [x] 5.3 Add graceful degradation: if Langfuse is unreachable, still return the answer and print a warning instead of failing — `flush_tracing()` catches any flush failure and warns rather than raising; both `flush_tracing`/`traced_span` also no-op cleanly when no Langfuse credentials are configured at all
+- [x] 5.4 Verify: run one query, confirm a matching trace appears in the Langfuse Cloud UI; capture a written walkthrough for `results/sample_trace.md` — verified 2026-08-22, all three modes' traces confirmed present via the Langfuse API (`client.api.trace.get(...)`), same account/project backing the Cloud UI
 
 ## 6. Comparative Eval (`comparative-eval` capability)
 

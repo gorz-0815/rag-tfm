@@ -16,4 +16,6 @@
 
 ## Impact
 
-Not assessed yet. Open questions to resolve when this is picked up: REPL approach (plain loop vs. TUI framework), whether session history carries across questions, and how this interacts with Langfuse tracing (one trace per question vs. per session).
+Not assessed yet. Open questions to resolve when this is picked up: REPL approach (plain loop vs. TUI framework), whether session history carries across questions, and how this interacts with Langfuse tracing.
+
+On that last point: likely both, not one-or-the-other. Langfuse has a `session_id` mechanism (Python SDK: `propagate_attributes(session_id=...)`) that groups multiple *traces* together for replay as one interaction thread - see https://langfuse.com/docs/observability/features/sessions. Each question asked in a REPL session would still get its own trace (as `ask` does today, one per question, per `src/tracing.py::traced_span`), but all traces from one REPL invocation would share a `session_id` so the whole interactive session can be viewed/replayed together in Langfuse, distinct from ad-hoc single-shot `ask` usage. The same `session_id` mechanism would also suit `src/eval.py` (Section 6, not yet built) for grouping one eval run's traces.
