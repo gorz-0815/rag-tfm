@@ -21,7 +21,8 @@ def load_manuals_index(manual_path):
     """
     from llama_index.core import VectorStoreIndex
 
-    vector_store.configure_embed_model()
+    with tracing.traced_span("load_embedding_model"):
+        vector_store.configure_embed_model()
     store = vector_store.get_existing_collection(manual_path)
     if store is None:
         raise SystemExit(
