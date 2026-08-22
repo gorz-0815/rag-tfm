@@ -68,6 +68,11 @@ no-context baseline). Planning is done; implementation happens through OpenSpec.
 
 ## Guardrails specific to this project
 
+- **Code comments describe current state, not how it got there.** No "was
+  X, changed to Y", no naming PRs/reviews/commits, no explaining removed
+  alternatives — that history belongs in the commit message, not the file.
+  If a comment isn't needed to understand the code as it stands today,
+  cut it rather than shrink it.
 - Never commit `.env`, `storage/`, or real contents of `data/manuals/` — the
   corpus is user-supplied and gitignored; only a `.gitkeep` belongs in git for
   now (see `sample-corpus-sourcing` stub for the eventual sample corpus).
