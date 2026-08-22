@@ -6,7 +6,7 @@ from pathlib import Path
 from src.query import ask_full_doc, ask_no_context, ask_rag
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Ask a question about the ingested manual.")
     parser.add_argument("question", help="The question to ask")
     mode = parser.add_mutually_exclusive_group()
@@ -21,7 +21,11 @@ def main() -> None:
         type=Path,
         help="Skip retrieval; send this manual's full text as context instead of top-k chunks",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
 
     if args.no_context:
         result = ask_no_context(args.question)
