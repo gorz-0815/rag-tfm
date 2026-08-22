@@ -46,13 +46,16 @@ def main() -> None:
     else:
         mode = "rag"
 
-    with tracing.traced_span(f"ask_{mode}", question=args.question):
+    with tracing.traced_span(f"ask_{mode}", question=args.question) as span:
         if mode == "no_context":
             result = ask_no_context(args.question)
         elif mode == "full_doc":
             result = ask_full_doc(args.question, args.manual_path)
         else:
             result = ask_rag(args.question, args.manual_path)
+
+        if span is not None:
+            span.update(output=result["answer"], metadata={"sources": result["sources"]})
 
     print(result["answer"])
     if result["sources"]:
