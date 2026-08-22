@@ -17,9 +17,8 @@ gh api graphql -f query='query { repository(owner:"<owner>", name:"<repo>") { pu
 ```
 
 For each thread where `isResolved` is `false`:
-- If it was actually addressed (a `Claude:` reply exists confirming the change/answer, and the change is really in the code) but just never resolved — resolve it now: `gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<node id>"}) { thread { isResolved } } }'`. Add a brief closing reply first if the existing reply doesn't clearly state the thread is settled.
+- If it was actually addressed (a `Claude:` reply exists confirming the change/answer, and the change is really in the code) but just never resolved — **do not resolve it yourself.** Resolving a thread is the user's call, not an automated action, even when the work behind it is done. List it in the summary as ready for them to resolve; add a brief closing reply first only if the existing reply doesn't already state the thread is settled.
 - If it was never actually addressed — that's a real gap, not a resolution-tracking gap. Go address it (use `pr-comment-triage`) before continuing.
-- Never resolve a thread whose resolution is genuinely uncertain (an open question, an ambiguous ask) — leave those open.
 
 ### 2. Completion / archive check
 
@@ -49,12 +48,12 @@ Group by underlying theme (not literal wording — "comment too verbose" and "sh
 
 ### 5. Summarize
 
-Short report: thread-resolution status (how many were unresolved, how many just needed resolving vs. actually needed work), completion status (and whether anything got archived), what guard checks ran and their result, what got automated vs. documented from the review-history scan (with commit references), and anything explicitly left as-is with a one-line reason.
+Short report: thread-resolution status (how many unresolved, how many done-but-unresolved and ready for the user to close, how many still need real work), completion status (and whether anything got archived), what guard checks ran and their result, what got automated vs. documented from the review-history scan (with commit references), and anything explicitly left as-is with a one-line reason.
 
 ## Guardrails
 
 - Never archive a change with unchecked tasks, even if this PR's own scope is fully done.
-- Don't resolve a thread just to tidy it away — only resolve one that was actually addressed.
+- **Never resolve a review thread.** Report which ones look ready and let the user resolve them — that action is theirs, always, even when the underlying work is unambiguously complete.
 - Don't invent a new hook/guideline from a single comment — require actual recurrence, or a clear meta-pattern, before adding process weight. Noise in, noise out.
 - Don't use this pass to start unrelated implementation work the review never asked for — if something looks worth doing but is out of scope, note it (a stub, a follow-up) rather than doing it here.
 - Confirm before anything destructive or merge-adjacent (archiving is a move+sync, not destructive, but a `git merge`/`gh pr merge` is — never do that as part of this skill without the user explicitly asking).
