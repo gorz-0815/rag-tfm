@@ -144,3 +144,38 @@ def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
     assert system_message.content == query.load_system_prompt()
     assert "How do I care for the filter?" in user_message.content
     assert "Soak the cartridge for 15 minutes before use." in user_message.content
+
+
+def test_ask_full_doc_records_extraction_span_output(tmp_path, monkeypatch):
+    manual_path = tmp_path / "manual-a.pdf"
+    manual_path.touch()
+
+    monkeypatch.setattr(
+        query, "_load_manual_text", lambda path: "Soak the cartridge for 15 minutes before use."
+    )
+    monkeypatch.setattr(query, "_build_llm", lambda: FakeLLM("ok"))
+
+    span_updates = []
+
+    class FakeSpan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc_info):
+            return False
+
+        def update(self, **kwargs):
+            span_updates.append(kwargs)
+
+    monkeypatch.setattr(query.tracing, "traced_span", lambda *a, **kw: FakeSpan())
+
+    query.ask_full_doc("How do I care for the filter?", manual_path)
+
+    assert span_updates == [
+        {
+            "output": {
+                "char_count": len("Soak the cartridge for 15 minutes before use."),
+                "preview": "Soak the cartridge for 15 minutes before use.",
+            }
+        }
+    ]

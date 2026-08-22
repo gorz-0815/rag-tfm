@@ -90,8 +90,13 @@ def ask_full_doc(question: str, manual_path) -> dict:
     if not manual_path.exists():
         return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
 
-    with tracing.traced_span("extract_manual_text", manual_path=str(manual_path)):
+    with tracing.traced_span("extract_manual_text", manual_path=str(manual_path)) as span:
         context = _load_manual_text(manual_path)
+        if span is not None:
+            # The full text is already visible in Anthropic.chat's prompt input
+            # (build_context_prompt embeds it) - a preview here is enough to
+            # confirm extraction worked without duplicating the whole manual.
+            span.update(output={"char_count": len(context), "preview": context[:200]})
     user_prompt = build_context_prompt(question, context)
 
     answer = _ask_with_context(user_prompt)
