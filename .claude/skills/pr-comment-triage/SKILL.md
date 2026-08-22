@@ -24,8 +24,19 @@ Work through a pull request's outstanding review comments systematically, one co
 5. **Use the platform's reply mechanism**, not a new top-level comment:
    - GitHub line comments: `gh api repos/<owner>/<repo>/pulls/<n>/comments -f body='<reply>' -F in_reply_to=<comment_id> -X POST` (replies into the same thread).
    - If the review is still pending (unsubmitted, only visible to its author), replies work the same way against comment IDs; don't submit/publish the review unless asked.
+   - **Prefix every reply body with `Claude: `.** Replies post under the user's own account/token (`gh` uses their auth), so without a marker a Claude-authored reply is visually indistinguishable from the human reviewer's own comments in the thread. The prefix is what makes it possible to tell them apart later.
 
-6. **Summarize when done.** Short list: which comments got a code change (+ what changed), which got a question (+ what was asked), any comment intentionally left untouched and why.
+6. **Resolve the thread once it's actually settled** — a reply does *not* automatically mark a GitHub review thread resolved; that's a separate action, and an unresolved-but-replied thread is easy to lose track of. After a clear comment's change is made and replied to, resolve its thread via GraphQL:
+   ```
+   gh api graphql -f query='query { repository(owner:"<owner>", name:"<repo>") { pullRequest(number:<n>) { reviewThreads(first:100) { nodes { id isResolved comments(first:1) { nodes { databaseId } } } } } } }'
+   ```
+   find the thread whose first comment's `databaseId` matches, then:
+   ```
+   gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thread node id>"}) { thread { isResolved } } }'
+   ```
+   Leave an ambiguous (question-asked) thread unresolved until the user answers. Don't resolve a thread whose resolution is itself uncertain — when in doubt, leave it open rather than mark it resolved.
+
+7. **Summarize when done.** Short list: which comments got a code change (+ what changed), which got a question (+ what was asked), any comment intentionally left untouched and why, and confirm no clear/completed thread was left unresolved (spot-check via the GraphQL query above if unsure).
 
 ## Guardrails
 
@@ -33,3 +44,4 @@ Work through a pull request's outstanding review comments systematically, one co
 - Don't let "clear" become "clear enough" — if two readings of a comment would lead to materially different changes, it's ambiguous.
 - Preserve existing thread structure: reply in-thread, don't delete/recreate comments unless the user asks.
 - If a clear change would remove or contradict something another still-open comment depends on, flag that conflict in your reply rather than silently picking a side.
+- Don't resolve a thread just to tidy it away — only resolve one you actually addressed (code changed + replied, or the open question got answered and acted on).
