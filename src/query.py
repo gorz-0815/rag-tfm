@@ -8,27 +8,32 @@ at module level, so this module stays importable without the full stack.
 
 from src import config
 from src.prompts import NO_CONTEXT_MESSAGE, build_context_prompt, load_system_prompt
+from src.validation import manual_collection_name
 
 # Number of top-ranked chunks retrieved per question and passed to the LLM
 # as context in RAG mode (see ask_rag's similarity_top_k usage below).
 SIMILARITY_TOP_K = 4
 
 
-def load_manuals_index():
-    """Open the Chroma index built by `src.ingest`.
+def load_manuals_index(manual_path):
+    """Open the Chroma collection built by `src.ingest` for this manual.
 
-    Reads the existing persisted collection at config.STORAGE_DIR; does not
-    create or populate it. Run `python -m src.ingest` first, or this raises
-    when the "manuals" collection doesn't exist yet.
+    Raises if that manual hasn't been ingested yet.
     """
     import chromadb
+    import chromadb.errors
     from llama_index.core import Settings, VectorStoreIndex
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
     from llama_index.vector_stores.chroma import ChromaVectorStore
 
     Settings.embed_model = HuggingFaceEmbedding(model_name=config.EMBEDDING_MODEL)
     chroma_client = chromadb.PersistentClient(path=str(config.STORAGE_DIR))
-    chroma_collection = chroma_client.get_collection("manuals")
+    try:
+        chroma_collection = chroma_client.get_collection(manual_collection_name(manual_path))
+    except chromadb.errors.NotFoundError as e:
+        raise SystemExit(
+            f"No index found for {manual_path}. Run `python -m src.ingest {manual_path}` first."
+        ) from e
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     return VectorStoreIndex.from_vector_store(vector_store)
 
@@ -67,8 +72,8 @@ def _load_manual_text(manual_path) -> str:
     return "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
-def ask_rag(question: str) -> dict:
-    index = load_manuals_index()
+def ask_rag(question: str, manual_path) -> dict:
+    index = load_manuals_index(manual_path)
     nodes = index.as_retriever(similarity_top_k=SIMILARITY_TOP_K).retrieve(question)
 
     if not nodes:

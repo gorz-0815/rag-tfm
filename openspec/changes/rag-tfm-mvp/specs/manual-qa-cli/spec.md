@@ -5,10 +5,10 @@ Lets a user ask a natural-language question about the ingested manual from the c
 ## ADDED Requirements
 
 ### Requirement: Single-shot question answering command
-The system SHALL provide a CLI command that accepts one question as an argument, answers it using the indexed manual as context, and prints the answer to stdout.
+The system SHALL provide a CLI command that accepts a question and the manual's path as arguments, answers the question using that manual's index as context, and prints the answer to stdout.
 
 #### Scenario: Question answered from the indexed manual
-- **WHEN** the user runs the ask command with a question whose answer exists in the ingested manual
+- **WHEN** the user runs the ask command with a question and manual path whose answer exists in that manual
 - **THEN** the command prints an answer consistent with that manual's content
 
 #### Scenario: No relevant content in the index
@@ -33,7 +33,7 @@ The system SHALL support running the same question through the LLM without any m
 The system SHALL support sending the complete text of one explicitly named manual as context, bypassing retrieval entirely, for use as an upper-bound comparison against RAG mode's chunk-based context.
 
 #### Scenario: Full-document mode produces an answer without retrieval
-- **WHEN** the ask command is run with full-document mode selected and a manual path (`--full-doc MANUAL_PATH`)
+- **WHEN** the ask command is run with a manual path and full-document mode selected (`--full-doc`)
 - **THEN** the command extracts and sends that manual's full text as context (no chunking, no vector search) and prints the answer with that manual listed as the source
 
 #### Scenario: Full-document mode with a missing manual path

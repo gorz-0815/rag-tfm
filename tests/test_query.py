@@ -79,30 +79,30 @@ def test_ask_no_context_returns_llm_answer(monkeypatch):
     assert fake_llm.prompts_seen == ["What is the capital of France?"]
 
 
-def test_ask_rag_with_no_retrieved_nodes_skips_llm_call(monkeypatch):
-    monkeypatch.setattr(query, "load_manuals_index", lambda: FakeIndex([]))
+def test_ask_rag_with_no_retrieved_nodes_skips_llm_call(tmp_path, monkeypatch):
+    monkeypatch.setattr(query, "load_manuals_index", lambda manual_path: FakeIndex([]))
 
     def fail_if_called():
         raise AssertionError("LLM should not be called when no context is retrieved")
 
     monkeypatch.setattr(query, "_build_llm", fail_if_called)
 
-    result = query.ask_rag("What is the warranty period?")
+    result = query.ask_rag("What is the warranty period?", tmp_path / "manual.pdf")
 
     assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": []}
 
 
-def test_ask_rag_builds_context_prompt_and_dedupes_sources(monkeypatch):
+def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch):
     nodes = [
         FakeNode("Soak the cartridge for 15 minutes.", "manual-a.pdf"),
         FakeNode("Rinse under running water.", "manual-a.pdf"),
     ]
     fake_llm = FakeLLM("Soak for 15 minutes, then rinse.")
 
-    monkeypatch.setattr(query, "load_manuals_index", lambda: FakeIndex(nodes))
+    monkeypatch.setattr(query, "load_manuals_index", lambda manual_path: FakeIndex(nodes))
     monkeypatch.setattr(query, "_build_llm", lambda: fake_llm)
 
-    result = query.ask_rag("How do I set up a new filter?")
+    result = query.ask_rag("How do I set up a new filter?", tmp_path / "manual.pdf")
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
