@@ -70,17 +70,18 @@ def ask_rag(question: str, manual_path) -> dict:
     nodes = index.as_retriever(similarity_top_k=SIMILARITY_TOP_K).retrieve(question)
 
     if not nodes:
-        return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
+        return {"answer": NO_CONTEXT_MESSAGE, "sources": [], "contexts": []}
 
     # Chunks are joined in retrieval-rank order, not document order - an
     # answer split across non-adjacent chunks may read as disjoint fragments.
-    context = "\n\n".join(node.get_content() for node in nodes)
+    contexts = [node.get_content() for node in nodes]
+    context = "\n\n".join(contexts)
     user_prompt = build_context_prompt(question, context)
 
     answer = _ask_with_context(user_prompt)
 
     sources = sorted({node.metadata.get("file_name", "unknown") for node in nodes})
-    return {"answer": answer, "sources": sources}
+    return {"answer": answer, "sources": sources, "contexts": contexts}
 
 
 def ask_full_doc(question: str, manual_path) -> dict:

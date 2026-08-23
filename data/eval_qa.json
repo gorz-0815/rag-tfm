@@ -1,0 +1,74 @@
+[
+  {
+    "question": "What is the capacity of the AquaFlow 200 pitcher?",
+    "ground_truth": "The lower pitcher holds 2.5 liters."
+  },
+  {
+    "question": "How long should a new filter cartridge be soaked before first use?",
+    "ground_truth": "Soak it in cold water for 15 minutes."
+  },
+  {
+    "question": "How long should the cartridge be rinsed under running water after soaking?",
+    "ground_truth": "Rinse it under running tap water for 30 seconds."
+  },
+  {
+    "question": "How many liters or months does one filter cartridge last?",
+    "ground_truth": "Approximately 150 liters or two months of typical household use, whichever comes first."
+  },
+  {
+    "question": "How long does it take for a full reservoir to filter completely into the lower pitcher?",
+    "ground_truth": "Approximately 8 to 10 minutes."
+  },
+  {
+    "question": "What color does the filter status indicator turn when replacement is due?",
+    "ground_truth": "It turns from green to red."
+  },
+  {
+    "question": "How do you remove the old cartridge for replacement?",
+    "ground_truth": "Twist it counterclockwise a quarter turn and lift it out of the funnel housing."
+  },
+  {
+    "question": "How long do you hold the reset button to reset the filter status indicator?",
+    "ground_truth": "Hold it for 3 seconds, until it blinks green twice."
+  },
+  {
+    "question": "Is the pitcher body dishwasher safe?",
+    "ground_truth": "No, the pitcher body is not dishwasher safe; only the lid and reservoir are, on the top rack."
+  },
+  {
+    "question": "What ratio of vinegar to water is used to descale the reservoir's mesh screen?",
+    "ground_truth": "One part white vinegar to four parts water, soaking the reservoir alone for 15 minutes."
+  },
+  {
+    "question": "What temperature range of water can be used with the AquaFlow 200?",
+    "ground_truth": "Cold tap water only, between 4 and 30 degrees Celsius."
+  },
+  {
+    "question": "Can the AquaFlow 200 be used during a boil-water advisory?",
+    "ground_truth": "No, it is not a substitute for emergency water disinfection during a boil-water advisory and is not certified to remove bacteria or viruses."
+  },
+  {
+    "question": "What type of batteries does the status indicator use, and how long do they last?",
+    "ground_truth": "Two AAA alkaline batteries, rated for approximately 12 months of typical use."
+  },
+  {
+    "question": "What are the three filtration stages in the cartridge, in order from inlet to outlet?",
+    "ground_truth": "Activated coconut-shell carbon, then ion-exchange resin, then a 0.5-micron sediment mesh."
+  },
+  {
+    "question": "Does the AquaFlow 200 remove fluoride from water?",
+    "ground_truth": "No, the ion-exchange stage is not certified for fluoride reduction, so fluoride levels are effectively unchanged."
+  },
+  {
+    "question": "What is the model number for the optional fridge-door insert accessory?",
+    "ground_truth": "AF200-FDI."
+  },
+  {
+    "question": "What's the warranty period for the AquaFlow 200?",
+    "ground_truth": "The manual does not state a warranty period."
+  },
+  {
+    "question": "How do I descale a coffee maker?",
+    "ground_truth": "The manual is for the AquaFlow 200 water filter pitcher and does not cover coffee makers."
+  }
+]
