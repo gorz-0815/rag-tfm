@@ -89,7 +89,7 @@ def test_ask_rag_with_no_retrieved_nodes_skips_llm_call(tmp_path, monkeypatch):
 
     result = query.ask_rag("What is the warranty period?", tmp_path / "manual.pdf")
 
-    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": []}
+    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": [], "contexts": []}
 
 
 def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch):
@@ -106,6 +106,10 @@ def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
+    assert result["contexts"] == [
+        "Soak the cartridge for 15 minutes.",
+        "Rinse under running water.",
+    ]
     assert len(fake_llm.messages_seen) == 1
     system_message, user_message = fake_llm.messages_seen[0]
     assert system_message.content == query.load_system_prompt()
