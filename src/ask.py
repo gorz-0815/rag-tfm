@@ -37,22 +37,17 @@ def main() -> None:
     tracing.init_tracing()
 
     if args.no_context:
-        mode = "no_context"
+        span_name, ask = "ask_no_context", lambda: ask_no_context(args.question)
     elif not args.manual_path:
         parser.error("manual_path is required unless --no-context is given")
         return
     elif args.full_doc:
-        mode = "full_doc"
+        span_name, ask = "ask_full_doc", lambda: ask_full_doc(args.question, args.manual_path)
     else:
-        mode = "rag"
+        span_name, ask = "ask_rag", lambda: ask_rag(args.question, args.manual_path)
 
-    with tracing.traced_span(f"ask_{mode}", question=args.question) as span:
-        if mode == "no_context":
-            result = ask_no_context(args.question)
-        elif mode == "full_doc":
-            result = ask_full_doc(args.question, args.manual_path)
-        else:
-            result = ask_rag(args.question, args.manual_path)
+    with tracing.traced_span(span_name, question=args.question) as span:
+        result = ask()
 
         if span is not None:
             span.update(output=result["answer"], metadata={"sources": result["sources"]})
