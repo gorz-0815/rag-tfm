@@ -4,15 +4,11 @@ comparison report to results/. Only RAG vs. no-context is required by the
 comparative-eval spec; full-doc is scored alongside as an extra data point,
 not a spec requirement.
 
-Faithfulness for the no-context condition is judged against RAG's retrieved
-manual chunks for the same question, not against nothing - that is the point
-of the comparison. The no-context answer never saw those chunks, so a low
-faithfulness score there shows it invented content the manual doesn't
-support. Full-doc and RAG are each judged against what they were actually
-given (the manual's full text vs. the retrieved chunks) - comparing their
-faithfulness scores isolates retrieval's cost from generation quality.
-context_precision and context_recall only make sense where retrieval
-happened, so those stay RAG-only.
+Faithfulness (Ragas' metric): an LLM judge extracts claims from the answer
+and scores what fraction are supported by the given context. No-context and
+RAG are both judged against RAG's retrieved chunks; full-doc against the
+full manual text. context_precision/recall stay RAG-only - only RAG has an
+actual retrieval step to score.
 
 Heavy imports (ragas, langchain-anthropic) are kept inside main() so this
 module stays importable without the full stack.
