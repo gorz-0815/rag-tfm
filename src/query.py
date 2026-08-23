@@ -89,7 +89,7 @@ def ask_full_doc(question: str, manual_path) -> dict:
 
     manual_path = Path(manual_path)
     if not manual_path.exists():
-        return {"answer": NO_CONTEXT_MESSAGE, "sources": []}
+        return {"answer": NO_CONTEXT_MESSAGE, "sources": [], "contexts": []}
 
     with tracing.traced_span("extract_manual_text", manual_path=str(manual_path)) as span:
         context = _load_manual_text(manual_path)
@@ -100,7 +100,7 @@ def ask_full_doc(question: str, manual_path) -> dict:
 
     answer = _ask_with_context(user_prompt)
 
-    return {"answer": answer, "sources": [manual_path.name]}
+    return {"answer": answer, "sources": [manual_path.name], "contexts": [context]}
 
 
 def ask_no_context(question: str) -> dict:

@@ -45,7 +45,7 @@
 - [x] 6.3 Build a Ragas `EvaluationDataset` from the results; wrap Claude (`langchain-anthropic` + `LangchainLLMWrapper`) as judge and the local HF embeddings (`LangchainEmbeddingsWrapper`) for context metrics
 - [x] 6.4 Score faithfulness + answer_relevancy for both conditions; context_precision + context_recall for RAG only
 - [x] 6.5 Write `results/eval_results.json` (raw) and `results/eval_results.md` (comparison table + prose interpretation of the gap)
-- [x] 6.6 Verify: `python -m src.eval` completes end-to-end and produces a results table with a visible RAG-vs-no-context gap on manual-specific questions — verified 2026-08-23 against `data/manuals/aquaflow-200-manual.pdf`: faithfulness 0.958 (RAG) vs. 0.093 (no-context), answer relevancy 0.789 vs. 0.107, context precision 0.616, context recall 0.889; see `results/eval_results.md`
+- [x] 6.6 Verify: `python -m src.eval` completes end-to-end and produces a results table with a visible RAG-vs-no-context gap on manual-specific questions — verified 2026-08-23 against `data/manuals/aquaflow-200-manual.pdf`: faithfulness 0.968 (RAG) vs. 0.093 (no-context), answer relevancy 0.791 vs. 0.107, context precision 0.616, context recall 0.889; full-doc scored alongside as an extra (non-spec) data point at 0.962 faithfulness, on par with RAG at a much larger per-query token cost; see `results/eval_results.md`
 
 ## 7. README and Publish Prep
 

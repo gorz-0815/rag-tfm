@@ -1,15 +1,18 @@
-"""Comparative eval: run data/eval_qa.json through both the no-context
-baseline and the RAG pipeline, score both with Ragas, and write a comparison
-report to results/.
+"""Comparative eval: run data/eval_qa.json through all three query modes
+(no-context baseline, full-doc, RAG), score them with Ragas, and write a
+comparison report to results/. Only RAG vs. no-context is required by the
+comparative-eval spec; full-doc is scored alongside as an extra data point,
+not a spec requirement.
 
-Faithfulness for the no-context condition is judged against the RAG
-condition's retrieved manual chunks for the same question, not against
-nothing - that is the point of the comparison. The no-context answer never
-saw those chunks, so a low faithfulness score there shows it invented
-content the manual doesn't support; the RAG answer, judged against the same
-chunks it was given, shows how well it stuck to them. context_precision and
-context_recall only make sense where retrieval happened, so those are
-RAG-only per the comparative-eval spec.
+Faithfulness for the no-context condition is judged against RAG's retrieved
+manual chunks for the same question, not against nothing - that is the point
+of the comparison. The no-context answer never saw those chunks, so a low
+faithfulness score there shows it invented content the manual doesn't
+support. Full-doc and RAG are each judged against what they were actually
+given (the manual's full text vs. the retrieved chunks) - comparing their
+faithfulness scores isolates retrieval's cost from generation quality.
+context_precision and context_recall only make sense where retrieval
+happened, so those stay RAG-only.
 
 Heavy imports (ragas, langchain-anthropic) are kept inside main() so this
 module stays importable without the full stack.
@@ -22,7 +25,7 @@ import json
 from pathlib import Path
 
 from src import config
-from src.query import ask_no_context, ask_rag
+from src.query import ask_full_doc, ask_no_context, ask_rag
 
 
 def load_eval_qa() -> list[dict]:
@@ -31,14 +34,15 @@ def load_eval_qa() -> list[dict]:
 
 
 def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
-    """Run every eval question through both conditions, returning one row
-    per question with both answers, RAG's retrieved contexts, and the
-    ground-truth reference.
+    """Run every eval question through all three conditions, returning one
+    row per question with each answer, each condition's own retrieved/given
+    contexts, and the ground-truth reference.
     """
     rows = []
     for item in eval_qa:
         question = item["question"]
         rag_result = ask_rag(question, manual_path)
+        full_doc_result = ask_full_doc(question, manual_path)
         no_context_result = ask_no_context(question)
         rows.append(
             {
@@ -46,16 +50,19 @@ def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
                 "reference": item["ground_truth"],
                 "rag_answer": rag_result["answer"],
                 "rag_contexts": rag_result["contexts"],
+                "full_doc_answer": full_doc_result["answer"],
+                "full_doc_contexts": full_doc_result["contexts"],
                 "no_context_answer": no_context_result["answer"],
             }
         )
     return rows
 
 
-def _build_ragas_dataset(rows: list[dict], answer_key: str):
-    """Build a Ragas dataset scoring `answer_key`'s answers against RAG's
-    retrieved contexts - see module docstring for why both conditions are
-    judged against the same retrieved contexts.
+def _build_ragas_dataset(rows: list[dict], answer_key: str, contexts_key: str):
+    """Build a Ragas dataset scoring `answer_key`'s answers against
+    `contexts_key`'s contexts. The no-context condition is deliberately
+    scored against RAG's contexts, not its own (it has none) - see module
+    docstring for why.
     """
     from ragas import EvaluationDataset
 
@@ -64,7 +71,7 @@ def _build_ragas_dataset(rows: list[dict], answer_key: str):
             "user_input": row["question"],
             "response": row[answer_key],
             "reference": row["reference"],
-            "retrieved_contexts": row["rag_contexts"],
+            "retrieved_contexts": row[contexts_key],
         }
         for row in rows
     ]
@@ -107,8 +114,9 @@ class _LlamaIndexEmbeddingsAdapter:
 
 
 def score_conditions(rows: list[dict]) -> dict:
-    """Score both conditions with Ragas: faithfulness + answer_relevancy for
-    both, context_precision + context_recall for RAG only.
+    """Score all three conditions with Ragas: faithfulness + answer_relevancy
+    for all three, context_precision + context_recall for RAG only (the only
+    condition with an actual retrieval step to score).
     """
     _patch_ragas_vertexai_import()
 
@@ -139,19 +147,32 @@ def score_conditions(rows: list[dict]) -> dict:
     context_precision = ContextPrecision(llm=judge_llm)
     context_recall = ContextRecall(llm=judge_llm)
 
-    rag_dataset = _build_ragas_dataset(rows, "rag_answer")
+    rag_dataset = _build_ragas_dataset(rows, "rag_answer", "rag_contexts")
     rag_scores = evaluate(
         rag_dataset,
         metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
     )
 
-    no_context_dataset = _build_ragas_dataset(rows, "no_context_answer")
+    # Scored against RAG's retrieved chunks, not its own contexts - see module docstring.
+    no_context_dataset = _build_ragas_dataset(rows, "no_context_answer", "rag_contexts")
     no_context_scores = evaluate(
         no_context_dataset,
         metrics=[faithfulness, answer_relevancy],
     )
 
-    return {"rag": rag_scores.to_pandas(), "no_context": no_context_scores.to_pandas()}
+    # Full-doc is scored against what it was actually given (the whole manual),
+    # not RAG's retrieved subset - it has that "context" natively.
+    full_doc_dataset = _build_ragas_dataset(rows, "full_doc_answer", "full_doc_contexts")
+    full_doc_scores = evaluate(
+        full_doc_dataset,
+        metrics=[faithfulness, answer_relevancy],
+    )
+
+    return {
+        "rag": rag_scores.to_pandas(),
+        "full_doc": full_doc_scores.to_pandas(),
+        "no_context": no_context_scores.to_pandas(),
+    }
 
 
 def _relevancy_interpretation(baseline_relevancy: float | None, rag_relevancy: float | None) -> str:
@@ -159,9 +180,9 @@ def _relevancy_interpretation(baseline_relevancy: float | None, rag_relevancy: f
         return ""
     if abs(rag_relevancy - baseline_relevancy) < 0.1:
         return (
-            "Answer relevancy stays comparable across both conditions since both "
-            "answer the question asked - the gap that matters for this project is "
-            "faithfulness, not relevancy."
+            "Answer relevancy stays comparable between RAG and the no-context "
+            "baseline since both answer the question asked - the gap that matters "
+            "for this project is faithfulness, not relevancy."
         )
     return (
         f"Answer relevancy also gaps ({baseline_relevancy} baseline vs. {rag_relevancy} "
@@ -171,14 +192,41 @@ def _relevancy_interpretation(baseline_relevancy: float | None, rag_relevancy: f
     )
 
 
+def _full_doc_interpretation(
+    rag_faithfulness: float | None, full_doc_faithfulness: float | None
+) -> str:
+    if rag_faithfulness is None or full_doc_faithfulness is None:
+        return ""
+    if full_doc_faithfulness > rag_faithfulness + 0.05:
+        return (
+            f"Full-doc scored higher faithfulness ({full_doc_faithfulness} vs. "
+            f"{rag_faithfulness} for RAG), each judged against what it was actually "
+            "given - the gap is retrieval's cost: RAG occasionally answers from an "
+            "incomplete slice of the manual, where full-doc never misses a relevant "
+            "section. That comes at a real cost this eval doesn't score directly: "
+            "full-doc sends the entire manual as context on every query, versus a "
+            "handful of retrieved chunks for RAG - see the README's cost/latency "
+            "section for the token/price trade-off."
+        )
+    return (
+        f"Full-doc's faithfulness ({full_doc_faithfulness}) is on par with RAG's "
+        f"({rag_faithfulness}), each judged against what it was actually given - for "
+        "this manual's size and this eval's questions, RAG's retrieval isn't losing "
+        "meaningfully relevant content, so full-doc's larger per-query token cost "
+        "(see the README's cost/latency section) buys little accuracy here."
+    )
+
+
 def write_results(rows: list[dict], scores: dict) -> None:
     config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     rag_df = scores["rag"]
+    full_doc_df = scores["full_doc"]
     no_context_df = scores["no_context"]
 
     raw = {
         "rag": rag_df.to_dict(orient="records"),
+        "full_doc": full_doc_df.to_dict(orient="records"),
         "no_context": no_context_df.to_dict(orient="records"),
     }
     (config.RESULTS_DIR / "eval_results.json").write_text(
@@ -192,31 +240,34 @@ def write_results(rows: list[dict], scores: dict) -> None:
     rag_relevancy = avg(rag_df, "answer_relevancy")
     rag_precision = avg(rag_df, "context_precision")
     rag_recall = avg(rag_df, "context_recall")
+    full_doc_faithfulness = avg(full_doc_df, "faithfulness")
+    full_doc_relevancy = avg(full_doc_df, "answer_relevancy")
     baseline_faithfulness = avg(no_context_df, "faithfulness")
     baseline_relevancy = avg(no_context_df, "answer_relevancy")
 
     lines = [
-        "# Comparative eval: RAG vs. no-context baseline",
+        "# Comparative eval: RAG vs. full-doc vs. no-context baseline",
         "",
         f"{len(rows)} hand-written questions against the ingested manual, "
-        "each answered under both conditions and scored with Ragas "
+        "each answered under all three modes and scored with Ragas "
         "(judge: Claude, embeddings: the local HF model used for retrieval).",
         "",
         "## Results",
         "",
-        "| Metric | No-context baseline | RAG |",
-        "|---|---|---|",
-        f"| Faithfulness | {baseline_faithfulness} | {rag_faithfulness} |",
-        f"| Answer relevancy | {baseline_relevancy} | {rag_relevancy} |",
-        f"| Context precision | n/a | {rag_precision} |",
-        f"| Context recall | n/a | {rag_recall} |",
+        "| Metric | No-context baseline | Full-doc | RAG |",
+        "|---|---|---|---|",
+        f"| Faithfulness | {baseline_faithfulness} | {full_doc_faithfulness} "
+        f"| {rag_faithfulness} |",
+        f"| Answer relevancy | {baseline_relevancy} | {full_doc_relevancy} | {rag_relevancy} |",
+        f"| Context precision | n/a | n/a | {rag_precision} |",
+        f"| Context recall | n/a | n/a | {rag_recall} |",
         "",
-        "Faithfulness for both conditions is judged against the same "
-        "manual chunks RAG retrieved for each question - the no-context "
-        "answer never saw them, so its faithfulness score reflects how "
-        "much it invented versus what the manual actually says. Context "
-        "precision/recall only apply where retrieval happened, so they're "
-        "RAG-only.",
+        "Faithfulness is judged against what each condition was actually given: "
+        "RAG's retrieved chunks for RAG, the manual's full text for full-doc. The "
+        "no-context baseline never saw any manual content, so it's judged against "
+        "RAG's retrieved chunks too - its score reflects how much it invented "
+        "versus what the manual actually says. Context precision/recall only apply "
+        "where retrieval happened, so they're RAG-only.",
         "",
         "## Interpretation",
         "",
@@ -231,7 +282,8 @@ def write_results(rows: list[dict], scores: dict) -> None:
             "the no-context condition either declines to answer specifically or "
             "invents a plausible-sounding but ungrounded number; the RAG condition "
             "answers from the retrieved chunks and can be verified against them. "
-            f"{_relevancy_interpretation(baseline_relevancy, rag_relevancy)}"
+            f"{_relevancy_interpretation(baseline_relevancy, rag_relevancy)} "
+            f"{_full_doc_interpretation(rag_faithfulness, full_doc_faithfulness)}"
         ),
         "",
     ]
@@ -240,7 +292,8 @@ def write_results(rows: list[dict], scores: dict) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run the comparative eval (no-context vs RAG) against an ingested manual."
+        description="Run the comparative eval (no-context vs full-doc vs RAG) "
+        "against an ingested manual."
     )
     parser.add_argument("manual_path", type=Path, help="Path to the ingested manual PDF")
     return parser
