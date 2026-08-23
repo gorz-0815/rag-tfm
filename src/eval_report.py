@@ -9,6 +9,27 @@ import json
 from src import config
 from src.query import SIMILARITY_TOP_K
 
+# USD per 1M tokens (input, output), Anthropic's published first-party API
+# pricing as of 2026-08. Only models this project actually configures need an
+# entry; an unrecognized config.ANTHROPIC_MODEL just skips cost reporting
+# (see _cost_usd) rather than guessing at a price.
+PRICING_PER_MILLION_TOKENS = {
+    "claude-haiku-4-5": (1.00, 5.00),
+    "claude-sonnet-5": (3.00, 15.00),
+    "claude-opus-5": (5.00, 25.00),
+}
+
+
+def _cost_usd(usage: dict) -> float | None:
+    pricing = PRICING_PER_MILLION_TOKENS.get(config.ANTHROPIC_MODEL)
+    if pricing is None:
+        return None
+    input_price, output_price = pricing
+    return (
+        usage["input_tokens"] / 1_000_000 * input_price
+        + usage["output_tokens"] / 1_000_000 * output_price
+    )
+
 
 def _relevancy_interpretation(baseline_relevancy: float | None, rag_relevancy: float | None) -> str:
     if baseline_relevancy is None or rag_relevancy is None:
@@ -105,7 +126,7 @@ def _cost_interpretation(
     if rag_cost is None or full_doc_cost is None or baseline_cost is None:
         return (
             f"Per-query cost isn't reported for model '{config.ANTHROPIC_MODEL}' - "
-            "add it to PRICING_PER_MILLION_TOKENS in src/eval.py to include it."
+            "add it to PRICING_PER_MILLION_TOKENS in src/eval_report.py to include it."
         )
     full_doc_multiple = round(full_doc_cost / rag_cost, 1) if rag_cost else "?"
     token_multiple = (
@@ -115,7 +136,7 @@ def _cost_interpretation(
     )
     return (
         f"Per-query cost (from Anthropic's actual reported token usage, at "
-        f"{config.ANTHROPIC_MODEL}'s published rates): ${baseline_cost:.5f} "
+        f"{config.ANTHROPIC_MODEL}'s published rates as of 2026-08): ${baseline_cost:.5f} "
         f"no-context, ${rag_cost:.5f} RAG, ${full_doc_cost:.5f} full-doc - "
         f"full-doc costs about {full_doc_multiple}x RAG's per-query price. That "
         f"traces directly to input tokens: full-doc averages {full_doc_input_tokens} "
@@ -147,9 +168,9 @@ def _build_raw_json(rows: list[dict], rag_df, full_doc_df, no_context_df) -> dic
         "cost_usd": [
             {
                 "question": row["question"],
-                "rag": row["rag_cost_usd"],
-                "full_doc": row["full_doc_cost_usd"],
-                "no_context": row["no_context_cost_usd"],
+                "rag": _cost_usd(row["rag_usage"]),
+                "full_doc": _cost_usd(row["full_doc_usage"]),
+                "no_context": _cost_usd(row["no_context_usage"]),
             }
             for row in rows
         ],
@@ -173,8 +194,8 @@ def _avg_latency(rows, key):
     return round(sum(row[key] for row in rows) / len(rows), 2) if rows else None
 
 
-def _avg_cost(rows, key):
-    values = [row[key] for row in rows if row[key] is not None]
+def _avg_cost(rows, usage_key):
+    values = [cost for row in rows if (cost := _cost_usd(row[usage_key])) is not None]
     return round(sum(values) / len(values), 5) if values else None
 
 
@@ -195,9 +216,9 @@ def _build_markdown(rows: list[dict], rag_df, full_doc_df, no_context_df) -> str
     rag_latency = _avg_latency(rows, "rag_latency_s")
     full_doc_latency = _avg_latency(rows, "full_doc_latency_s")
     baseline_latency = _avg_latency(rows, "no_context_latency_s")
-    rag_cost = _avg_cost(rows, "rag_cost_usd")
-    full_doc_cost = _avg_cost(rows, "full_doc_cost_usd")
-    baseline_cost = _avg_cost(rows, "no_context_cost_usd")
+    rag_cost = _avg_cost(rows, "rag_usage")
+    full_doc_cost = _avg_cost(rows, "full_doc_usage")
+    baseline_cost = _avg_cost(rows, "no_context_usage")
     rag_input_tokens = _avg_tokens(rows, "rag_usage", "input_tokens")
     rag_output_tokens = _avg_tokens(rows, "rag_usage", "output_tokens")
     full_doc_input_tokens = _avg_tokens(rows, "full_doc_usage", "input_tokens")
