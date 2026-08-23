@@ -83,6 +83,14 @@ no-context baseline). Planning is done; implementation happens through OpenSpec.
   alternatives — that history belongs in the commit message, not the file.
   If a comment isn't needed to understand the code as it stands today,
   cut it rather than shrink it.
+- **Comments explaining a non-obvious mechanism: one or two lines, not a
+  paragraph.** State the load-bearing fact only (what would surprise a
+  reader, or break if changed) — not the full reasoning chain that led
+  there. Don't restate the same explanation in both a docstring and an
+  adjacent inline comment; point the second one at the first instead of
+  repeating it. Flagged three separate times in PR #8 review (`src/query.py`,
+  `src/tracing.py`, `src/vector_store.py`) — a real recurring habit after
+  debugging something non-trivial, not a one-off.
 - Never commit `.env`, `storage/`, or real contents of `data/manuals/` — the
   corpus is user-supplied and gitignored; only a `.gitkeep` belongs in git for
   now (see `sample-corpus-sourcing` stub for the eventual sample corpus).
