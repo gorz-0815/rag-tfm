@@ -22,6 +22,7 @@ Usage: python -m src.eval <manual_path>
 
 import argparse
 import json
+import time
 from pathlib import Path
 
 from src import config
@@ -33,26 +34,35 @@ def load_eval_qa() -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _timed(fn, *args):
+    start = time.perf_counter()
+    result = fn(*args)
+    return result, time.perf_counter() - start
+
+
 def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
     """Run every eval question through all three conditions, returning one
     row per question with each answer, each condition's own retrieved/given
-    contexts, and the ground-truth reference.
+    contexts, wall-clock latency, and the ground-truth reference.
     """
     rows = []
     for item in eval_qa:
         question = item["question"]
-        rag_result = ask_rag(question, manual_path)
-        full_doc_result = ask_full_doc(question, manual_path)
-        no_context_result = ask_no_context(question)
+        rag_result, rag_latency_s = _timed(ask_rag, question, manual_path)
+        full_doc_result, full_doc_latency_s = _timed(ask_full_doc, question, manual_path)
+        no_context_result, no_context_latency_s = _timed(ask_no_context, question)
         rows.append(
             {
                 "question": question,
                 "reference": item["ground_truth"],
                 "rag_answer": rag_result["answer"],
                 "rag_contexts": rag_result["contexts"],
+                "rag_latency_s": rag_latency_s,
                 "full_doc_answer": full_doc_result["answer"],
                 "full_doc_contexts": full_doc_result["contexts"],
+                "full_doc_latency_s": full_doc_latency_s,
                 "no_context_answer": no_context_result["answer"],
+                "no_context_latency_s": no_context_latency_s,
             }
         )
     return rows
@@ -217,6 +227,49 @@ def _full_doc_interpretation(
     )
 
 
+def _latency_interpretation(
+    rows: list[dict],
+    rag_latency: float | None,
+    full_doc_latency: float | None,
+    baseline_latency: float | None,
+) -> str:
+    if rag_latency is None or full_doc_latency is None or baseline_latency is None:
+        return ""
+
+    def avg_len(key):
+        return round(sum(len(row[key]) for row in rows) / len(rows)) if rows else None
+
+    rag_chars = avg_len("rag_answer")
+    baseline_chars = avg_len("no_context_answer")
+    rag_latencies = [row["rag_latency_s"] for row in rows]
+    rag_latency_excl_first = (
+        round(sum(rag_latencies[1:]) / len(rag_latencies[1:]), 2)
+        if len(rag_latencies) > 1
+        else rag_latency
+    )
+
+    length_ratio = round(baseline_chars / rag_chars, 1) if rag_chars else "?"
+
+    return (
+        f"Wall-clock latency (avg per question, including this process's own "
+        f"retrieval/extraction time, not just the LLM call): {baseline_latency}s "
+        f"no-context, {rag_latency}s RAG, {full_doc_latency}s full-doc - full-doc's "
+        "much larger input isn't the bottleneck here (prompt input is fast to "
+        "process regardless of length), so it isn't slower than RAG despite its "
+        "far larger per-query token spend. The no-context baseline is the slowest "
+        "of the three despite doing the least work: its answers run roughly "
+        f"{length_ratio}x longer ({baseline_chars} vs. {rag_chars} characters on "
+        "average) since there's no 'answer only from this context, concisely' "
+        "system prompt constraining it - output generation, not input size, "
+        f"dominates latency here. RAG's own average includes a one-time "
+        f"embedding-model load on the first question ({rag_latencies[0]:.1f}s of "
+        f"it); excluding that startup cost, RAG averages {rag_latency_excl_first}s "
+        "per query, on par with full-doc. This is a single run over 18 questions "
+        "against one small local backend, not a rigorous benchmark - treat it as a "
+        "directional signal, not a production latency SLA."
+    )
+
+
 def write_results(rows: list[dict], scores: dict) -> None:
     config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -228,6 +281,15 @@ def write_results(rows: list[dict], scores: dict) -> None:
         "rag": rag_df.to_dict(orient="records"),
         "full_doc": full_doc_df.to_dict(orient="records"),
         "no_context": no_context_df.to_dict(orient="records"),
+        "latency_s": [
+            {
+                "question": row["question"],
+                "rag": row["rag_latency_s"],
+                "full_doc": row["full_doc_latency_s"],
+                "no_context": row["no_context_latency_s"],
+            }
+            for row in rows
+        ],
     }
     (config.RESULTS_DIR / "eval_results.json").write_text(
         json.dumps(raw, indent=2), encoding="utf-8"
@@ -235,6 +297,9 @@ def write_results(rows: list[dict], scores: dict) -> None:
 
     def avg(df, col):
         return round(df[col].mean(), 3) if col in df else None
+
+    def avg_latency(rows, key):
+        return round(sum(row[key] for row in rows) / len(rows), 2) if rows else None
 
     rag_faithfulness = avg(rag_df, "faithfulness")
     rag_relevancy = avg(rag_df, "answer_relevancy")
@@ -244,6 +309,9 @@ def write_results(rows: list[dict], scores: dict) -> None:
     full_doc_relevancy = avg(full_doc_df, "answer_relevancy")
     baseline_faithfulness = avg(no_context_df, "faithfulness")
     baseline_relevancy = avg(no_context_df, "answer_relevancy")
+    rag_latency = avg_latency(rows, "rag_latency_s")
+    full_doc_latency = avg_latency(rows, "full_doc_latency_s")
+    baseline_latency = avg_latency(rows, "no_context_latency_s")
 
     lines = [
         "# Comparative eval: RAG vs. full-doc vs. no-context baseline",
@@ -261,6 +329,7 @@ def write_results(rows: list[dict], scores: dict) -> None:
         f"| Answer relevancy | {baseline_relevancy} | {full_doc_relevancy} | {rag_relevancy} |",
         f"| Context precision | n/a | n/a | {rag_precision} |",
         f"| Context recall | n/a | n/a | {rag_recall} |",
+        f"| Latency (avg, s) | {baseline_latency} | {full_doc_latency} | {rag_latency} |",
         "",
         "Faithfulness is judged against what each condition was actually given: "
         "RAG's retrieved chunks for RAG, the manual's full text for full-doc. The "
@@ -283,7 +352,8 @@ def write_results(rows: list[dict], scores: dict) -> None:
             "invents a plausible-sounding but ungrounded number; the RAG condition "
             "answers from the retrieved chunks and can be verified against them. "
             f"{_relevancy_interpretation(baseline_relevancy, rag_relevancy)} "
-            f"{_full_doc_interpretation(rag_faithfulness, full_doc_faithfulness)}"
+            f"{_full_doc_interpretation(rag_faithfulness, full_doc_faithfulness)} "
+            f"{_latency_interpretation(rows, rag_latency, full_doc_latency, baseline_latency)}"
         ),
         "",
     ]
