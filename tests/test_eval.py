@@ -62,9 +62,12 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
         "reference": "15 minutes.",
         "rag_answer": "Soak for 15 minutes.",
         "rag_contexts": ["Soak the cartridge for 15 minutes."],
+        "rag_usage": fake_usage,
         "full_doc_answer": "Soak the cartridge for 15 minutes before use.",
         "full_doc_contexts": ["<the whole manual text>"],
+        "full_doc_usage": fake_usage,
         "no_context_answer": "Usually about 30 minutes.",
+        "no_context_usage": fake_usage,
     }
     assert all(latency >= 0 for latency in latencies.values())
     assert all(cost > 0 for cost in costs.values())
@@ -80,12 +83,15 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
             "rag_answer": "A1",
             "rag_latency_s": 1.2,
             "rag_cost_usd": 0.0003,
+            "rag_usage": {"input_tokens": 200, "output_tokens": 50},
             "full_doc_answer": "C1",
             "full_doc_latency_s": 2.5,
             "full_doc_cost_usd": 0.002,
+            "full_doc_usage": {"input_tokens": 3000, "output_tokens": 55},
             "no_context_answer": "B1",
             "no_context_latency_s": 0.5,
             "no_context_cost_usd": 0.0001,
+            "no_context_usage": {"input_tokens": 15, "output_tokens": 120},
         },
     ]
     scores = {
@@ -113,6 +119,8 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
     assert raw["cost_usd"] == [
         {"question": "Q1", "rag": 0.0003, "full_doc": 0.002, "no_context": 0.0001}
     ]
+    assert raw["token_usage"][0]["rag"] == {"input_tokens": 200, "output_tokens": 50}
+    assert raw["token_usage"][0]["full_doc"] == {"input_tokens": 3000, "output_tokens": 55}
 
     report = (tmp_path / "eval_results.md").read_text(encoding="utf-8")
     assert "0.9" in report
@@ -120,4 +128,6 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
     assert "0.2" in report
     assert "Latency" in report
     assert "Cost per query" in report
+    assert "Input tokens" in report
+    assert "Output tokens" in report
     assert "Interpretation" in report
