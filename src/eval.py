@@ -25,16 +25,6 @@ from src import config
 from src.eval_report import write_results
 from src.query import ask_full_doc, ask_no_context, ask_rag
 
-# USD per 1M tokens (input, output), Anthropic's published first-party API
-# pricing as of 2026-08. Only models this project actually configures need an
-# entry; an unrecognized config.ANTHROPIC_MODEL just skips cost reporting
-# (see _cost_usd) rather than guessing at a price.
-PRICING_PER_MILLION_TOKENS = {
-    "claude-haiku-4-5": (1.00, 5.00),
-    "claude-sonnet-5": (3.00, 15.00),
-    "claude-opus-5": (5.00, 25.00),
-}
-
 
 def load_eval_qa() -> list[dict]:
     path = config.PROJECT_ROOT / "data" / "eval_qa.json"
@@ -47,22 +37,11 @@ def _timed(fn, *args):
     return result, time.perf_counter() - start
 
 
-def _cost_usd(usage: dict) -> float | None:
-    pricing = PRICING_PER_MILLION_TOKENS.get(config.ANTHROPIC_MODEL)
-    if pricing is None:
-        return None
-    input_price, output_price = pricing
-    return (
-        usage["input_tokens"] / 1_000_000 * input_price
-        + usage["output_tokens"] / 1_000_000 * output_price
-    )
-
-
 def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
     """Run every eval question through all three conditions, returning one
     row per question with each answer, each condition's own retrieved/given
-    contexts, wall-clock latency, per-query USD cost, and the ground-truth
-    reference.
+    contexts, wall-clock latency, token usage, and the ground-truth
+    reference. USD cost is derived from usage later, in eval_report.
     """
     rows = []
     for item in eval_qa:
@@ -78,16 +57,13 @@ def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
                 "rag_contexts": rag_result["contexts"],
                 "rag_latency_s": rag_latency_s,
                 "rag_usage": rag_result["usage"],
-                "rag_cost_usd": _cost_usd(rag_result["usage"]),
                 "full_doc_answer": full_doc_result["answer"],
                 "full_doc_contexts": full_doc_result["contexts"],
                 "full_doc_latency_s": full_doc_latency_s,
                 "full_doc_usage": full_doc_result["usage"],
-                "full_doc_cost_usd": _cost_usd(full_doc_result["usage"]),
                 "no_context_answer": no_context_result["answer"],
                 "no_context_latency_s": no_context_latency_s,
                 "no_context_usage": no_context_result["usage"],
-                "no_context_cost_usd": _cost_usd(no_context_result["usage"]),
             }
         )
     return rows

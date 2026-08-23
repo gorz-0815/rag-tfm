@@ -51,9 +51,6 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
     latencies = {
         key: row.pop(key) for key in ["rag_latency_s", "full_doc_latency_s", "no_context_latency_s"]
     }
-    costs = {
-        key: row.pop(key) for key in ["rag_cost_usd", "full_doc_cost_usd", "no_context_cost_usd"]
-    }
     assert row == {
         "question": "How long should I soak the cartridge?",
         "reference": "15 minutes.",
@@ -67,4 +64,3 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
         "no_context_usage": fake_usage,
     }
     assert all(latency >= 0 for latency in latencies.values())
-    assert all(cost > 0 for cost in costs.values())
