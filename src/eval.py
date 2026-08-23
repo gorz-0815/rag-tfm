@@ -28,6 +28,16 @@ from pathlib import Path
 from src import config
 from src.query import ask_full_doc, ask_no_context, ask_rag
 
+# USD per 1M tokens (input, output), Anthropic's published first-party API
+# pricing as of 2026-08. Only models this project actually configures need an
+# entry; an unrecognized config.ANTHROPIC_MODEL just skips cost reporting
+# (see _cost_usd) rather than guessing at a price.
+PRICING_PER_MILLION_TOKENS = {
+    "claude-haiku-4-5": (1.00, 5.00),
+    "claude-sonnet-5": (3.00, 15.00),
+    "claude-opus-5": (5.00, 25.00),
+}
+
 
 def load_eval_qa() -> list[dict]:
     path = config.PROJECT_ROOT / "data" / "eval_qa.json"
@@ -40,10 +50,22 @@ def _timed(fn, *args):
     return result, time.perf_counter() - start
 
 
+def _cost_usd(usage: dict) -> float | None:
+    pricing = PRICING_PER_MILLION_TOKENS.get(config.ANTHROPIC_MODEL)
+    if pricing is None:
+        return None
+    input_price, output_price = pricing
+    return (
+        usage["input_tokens"] / 1_000_000 * input_price
+        + usage["output_tokens"] / 1_000_000 * output_price
+    )
+
+
 def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
     """Run every eval question through all three conditions, returning one
     row per question with each answer, each condition's own retrieved/given
-    contexts, wall-clock latency, and the ground-truth reference.
+    contexts, wall-clock latency, per-query USD cost, and the ground-truth
+    reference.
     """
     rows = []
     for item in eval_qa:
@@ -58,11 +80,14 @@ def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
                 "rag_answer": rag_result["answer"],
                 "rag_contexts": rag_result["contexts"],
                 "rag_latency_s": rag_latency_s,
+                "rag_cost_usd": _cost_usd(rag_result["usage"]),
                 "full_doc_answer": full_doc_result["answer"],
                 "full_doc_contexts": full_doc_result["contexts"],
                 "full_doc_latency_s": full_doc_latency_s,
+                "full_doc_cost_usd": _cost_usd(full_doc_result["usage"]),
                 "no_context_answer": no_context_result["answer"],
                 "no_context_latency_s": no_context_latency_s,
+                "no_context_cost_usd": _cost_usd(no_context_result["usage"]),
             }
         )
     return rows
@@ -270,6 +295,29 @@ def _latency_interpretation(
     )
 
 
+def _cost_interpretation(
+    rag_cost: float | None, full_doc_cost: float | None, baseline_cost: float | None
+) -> str:
+    if rag_cost is None or full_doc_cost is None or baseline_cost is None:
+        return (
+            f"Per-query cost isn't reported for model '{config.ANTHROPIC_MODEL}' - "
+            "add it to PRICING_PER_MILLION_TOKENS in src/eval.py to include it."
+        )
+    full_doc_multiple = round(full_doc_cost / rag_cost, 1) if rag_cost else "?"
+    return (
+        f"Per-query cost (from Anthropic's actual reported token usage, at "
+        f"{config.ANTHROPIC_MODEL}'s published rates): ${baseline_cost:.5f} "
+        f"no-context, ${rag_cost:.5f} RAG, ${full_doc_cost:.5f} full-doc - "
+        f"full-doc costs about {full_doc_multiple}x RAG's per-query price, almost "
+        "entirely from input tokens (the whole manual, resent on every query, "
+        "versus a handful of retrieved chunks). This is the actual trade-off "
+        "full-doc's faithfulness parity with RAG comes at: not accuracy, and not "
+        "necessarily latency, but dollars - at higher query volume or a larger "
+        "manual, that gap scales linearly with corpus size for full-doc and stays "
+        "roughly flat for RAG."
+    )
+
+
 def write_results(rows: list[dict], scores: dict) -> None:
     config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -290,6 +338,15 @@ def write_results(rows: list[dict], scores: dict) -> None:
             }
             for row in rows
         ],
+        "cost_usd": [
+            {
+                "question": row["question"],
+                "rag": row["rag_cost_usd"],
+                "full_doc": row["full_doc_cost_usd"],
+                "no_context": row["no_context_cost_usd"],
+            }
+            for row in rows
+        ],
     }
     (config.RESULTS_DIR / "eval_results.json").write_text(
         json.dumps(raw, indent=2), encoding="utf-8"
@@ -300,6 +357,10 @@ def write_results(rows: list[dict], scores: dict) -> None:
 
     def avg_latency(rows, key):
         return round(sum(row[key] for row in rows) / len(rows), 2) if rows else None
+
+    def avg_cost(rows, key):
+        values = [row[key] for row in rows if row[key] is not None]
+        return round(sum(values) / len(values), 5) if values else None
 
     rag_faithfulness = avg(rag_df, "faithfulness")
     rag_relevancy = avg(rag_df, "answer_relevancy")
@@ -312,6 +373,9 @@ def write_results(rows: list[dict], scores: dict) -> None:
     rag_latency = avg_latency(rows, "rag_latency_s")
     full_doc_latency = avg_latency(rows, "full_doc_latency_s")
     baseline_latency = avg_latency(rows, "no_context_latency_s")
+    rag_cost = avg_cost(rows, "rag_cost_usd")
+    full_doc_cost = avg_cost(rows, "full_doc_cost_usd")
+    baseline_cost = avg_cost(rows, "no_context_cost_usd")
 
     lines = [
         "# Comparative eval: RAG vs. full-doc vs. no-context baseline",
@@ -330,6 +394,7 @@ def write_results(rows: list[dict], scores: dict) -> None:
         f"| Context precision | n/a | n/a | {rag_precision} |",
         f"| Context recall | n/a | n/a | {rag_recall} |",
         f"| Latency (avg, s) | {baseline_latency} | {full_doc_latency} | {rag_latency} |",
+        f"| Cost per query (avg, $) | {baseline_cost} | {full_doc_cost} | {rag_cost} |",
         "",
         "Faithfulness is judged against what each condition was actually given: "
         "RAG's retrieved chunks for RAG, the manual's full text for full-doc. The "
@@ -353,7 +418,8 @@ def write_results(rows: list[dict], scores: dict) -> None:
             "answers from the retrieved chunks and can be verified against them. "
             f"{_relevancy_interpretation(baseline_relevancy, rag_relevancy)} "
             f"{_full_doc_interpretation(rag_faithfulness, full_doc_faithfulness)} "
-            f"{_latency_interpretation(rows, rag_latency, full_doc_latency, baseline_latency)}"
+            f"{_latency_interpretation(rows, rag_latency, full_doc_latency, baseline_latency)} "
+            f"{_cost_interpretation(rag_cost, full_doc_cost, baseline_cost)}"
         ),
         "",
     ]
