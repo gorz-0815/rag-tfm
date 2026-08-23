@@ -37,20 +37,36 @@ def _build_llm():
     return Anthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY)
 
 
-def _ask_with_context(user_prompt: str) -> str:
+# Returned instead of real token counts when a branch never calls the LLM
+# (e.g. no retrieved chunks, missing manual) - keeps the "usage" key uniform
+# across every ask_* return value.
+NO_USAGE = {"input_tokens": 0, "output_tokens": 0}
+
+
+def _usage_from_response(response) -> dict:
+    """Anthropic's own per-call token counts, straight from the API response
+    - not an estimate. `response.raw` is the raw Anthropic message dict for
+    both llm.chat() and llm.complete() responses.
+    """
+    usage = response.raw["usage"]
+    return {"input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens}
+
+
+def _ask_with_context(user_prompt: str):
     """Send SYSTEM_PROMPT.md as the system message and user_prompt as the
-    user turn. Used by ask_rag and ask_full_doc, not ask_no_context.
+    user turn. Used by ask_rag and ask_full_doc, not ask_no_context. Returns
+    the raw llama_index ChatResponse so callers can read both the answer
+    text and token usage.
     """
     from llama_index.core.llms import ChatMessage, MessageRole
 
     llm = _build_llm()
-    response = llm.chat(
+    return llm.chat(
         [
             ChatMessage(role=MessageRole.SYSTEM, content=load_system_prompt()),
             ChatMessage(role=MessageRole.USER, content=user_prompt),
         ]
     )
-    return response.message.content
 
 
 def _load_manual_text(manual_path) -> str:
@@ -70,7 +86,7 @@ def ask_rag(question: str, manual_path) -> dict:
     nodes = index.as_retriever(similarity_top_k=SIMILARITY_TOP_K).retrieve(question)
 
     if not nodes:
-        return {"answer": NO_CONTEXT_MESSAGE, "sources": [], "contexts": []}
+        return {"answer": NO_CONTEXT_MESSAGE, "sources": [], "contexts": [], "usage": NO_USAGE}
 
     # Chunks are joined in retrieval-rank order, not document order - an
     # answer split across non-adjacent chunks may read as disjoint fragments.
@@ -78,10 +94,15 @@ def ask_rag(question: str, manual_path) -> dict:
     context = "\n\n".join(contexts)
     user_prompt = build_context_prompt(question, context)
 
-    answer = _ask_with_context(user_prompt)
+    response = _ask_with_context(user_prompt)
 
     sources = sorted({node.metadata.get("file_name", "unknown") for node in nodes})
-    return {"answer": answer, "sources": sources, "contexts": contexts}
+    return {
+        "answer": response.message.content,
+        "sources": sources,
+        "contexts": contexts,
+        "usage": _usage_from_response(response),
+    }
 
 
 def ask_full_doc(question: str, manual_path) -> dict:
@@ -89,7 +110,7 @@ def ask_full_doc(question: str, manual_path) -> dict:
 
     manual_path = Path(manual_path)
     if not manual_path.exists():
-        return {"answer": NO_CONTEXT_MESSAGE, "sources": [], "contexts": []}
+        return {"answer": NO_CONTEXT_MESSAGE, "sources": [], "contexts": [], "usage": NO_USAGE}
 
     with tracing.traced_span("extract_manual_text", manual_path=str(manual_path)) as span:
         context = _load_manual_text(manual_path)
@@ -98,12 +119,17 @@ def ask_full_doc(question: str, manual_path) -> dict:
             span.update(output={"char_count": len(context), "preview": context[:200]})
     user_prompt = build_context_prompt(question, context)
 
-    answer = _ask_with_context(user_prompt)
+    response = _ask_with_context(user_prompt)
 
-    return {"answer": answer, "sources": [manual_path.name], "contexts": [context]}
+    return {
+        "answer": response.message.content,
+        "sources": [manual_path.name],
+        "contexts": [context],
+        "usage": _usage_from_response(response),
+    }
 
 
 def ask_no_context(question: str) -> dict:
     llm = _build_llm()
     response = llm.complete(question)
-    return {"answer": str(response), "sources": []}
+    return {"answer": str(response), "sources": [], "usage": _usage_from_response(response)}

@@ -22,11 +22,14 @@ def test_load_eval_qa_returns_question_ground_truth_pairs():
 def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
     eval_qa = [{"question": "How long should I soak the cartridge?", "ground_truth": "15 minutes."}]
 
+    fake_usage = {"input_tokens": 100, "output_tokens": 20}
+
     def fake_ask_rag(question, manual_path):
         return {
             "answer": "Soak for 15 minutes.",
             "sources": ["manual.pdf"],
             "contexts": ["Soak the cartridge for 15 minutes."],
+            "usage": fake_usage,
         }
 
     def fake_ask_full_doc(question, manual_path):
@@ -34,10 +37,11 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
             "answer": "Soak the cartridge for 15 minutes before use.",
             "sources": ["manual.pdf"],
             "contexts": ["<the whole manual text>"],
+            "usage": fake_usage,
         }
 
     def fake_ask_no_context(question):
-        return {"answer": "Usually about 30 minutes.", "sources": []}
+        return {"answer": "Usually about 30 minutes.", "sources": [], "usage": fake_usage}
 
     monkeypatch.setattr(eval_module, "ask_rag", fake_ask_rag)
     monkeypatch.setattr(eval_module, "ask_full_doc", fake_ask_full_doc)
@@ -50,6 +54,9 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
     latencies = {
         key: row.pop(key) for key in ["rag_latency_s", "full_doc_latency_s", "no_context_latency_s"]
     }
+    costs = {
+        key: row.pop(key) for key in ["rag_cost_usd", "full_doc_cost_usd", "no_context_cost_usd"]
+    }
     assert row == {
         "question": "How long should I soak the cartridge?",
         "reference": "15 minutes.",
@@ -60,6 +67,7 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
         "no_context_answer": "Usually about 30 minutes.",
     }
     assert all(latency >= 0 for latency in latencies.values())
+    assert all(cost > 0 for cost in costs.values())
 
 
 def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatch):
@@ -71,10 +79,13 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
             "reference": "R1",
             "rag_answer": "A1",
             "rag_latency_s": 1.2,
+            "rag_cost_usd": 0.0003,
             "full_doc_answer": "C1",
             "full_doc_latency_s": 2.5,
+            "full_doc_cost_usd": 0.002,
             "no_context_answer": "B1",
             "no_context_latency_s": 0.5,
+            "no_context_cost_usd": 0.0001,
         },
     ]
     scores = {
@@ -99,10 +110,14 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
     assert raw["full_doc"][0]["faithfulness"] == 0.95
     assert raw["no_context"][0]["faithfulness"] == 0.2
     assert raw["latency_s"] == [{"question": "Q1", "rag": 1.2, "full_doc": 2.5, "no_context": 0.5}]
+    assert raw["cost_usd"] == [
+        {"question": "Q1", "rag": 0.0003, "full_doc": 0.002, "no_context": 0.0001}
+    ]
 
     report = (tmp_path / "eval_results.md").read_text(encoding="utf-8")
     assert "0.9" in report
     assert "0.95" in report
     assert "0.2" in report
     assert "Latency" in report
+    assert "Cost per query" in report
     assert "Interpretation" in report
