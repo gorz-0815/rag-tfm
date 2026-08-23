@@ -18,17 +18,9 @@ def _client():
 
 
 def _model_already_cached() -> bool:
-    """True if config.EMBEDDING_MODEL's weights are already in the local HF
-    cache. Lets us skip the network freshness checks HuggingFaceEmbedding
-    otherwise makes on every load - a real cost for a CLI that starts a
-    fresh process per invocation - while still allowing the normal
-    online/downloading path the first time a model isn't cached yet.
-
-    Deliberately checks the filesystem directly rather than importing
-    huggingface_hub: HF_HUB_OFFLINE is read into a module-level constant at
-    huggingface_hub's *import* time, not re-read afterwards, so importing it
-    here (even just to call scan_cache_dir()) before setting the env var
-    would permanently freeze the flag as unset for the rest of the process.
+    """True if config.EMBEDDING_MODEL is in the local HF cache. Checks the
+    filesystem directly, not via huggingface_hub - importing it would freeze
+    HF_HUB_OFFLINE as unset before we get a chance to set it.
     """
     import os
     from pathlib import Path
@@ -43,10 +35,7 @@ def _model_already_cached() -> bool:
 def configure_embed_model() -> None:
     import os
 
-    # Must run before importing HuggingFaceEmbedding (which pulls in
-    # huggingface_hub): HF_HUB_OFFLINE is frozen into a module constant at
-    # huggingface_hub's import time, so setting it after that import is a
-    # no-op even though construction itself happens later.
+    # Must run before importing HuggingFaceEmbedding - see _model_already_cached.
     if _model_already_cached():
         os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
