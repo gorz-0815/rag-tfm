@@ -32,16 +32,10 @@ def init_tracing() -> None:
     )
 
     if not _instrumented:
-        # LlamaIndexInstrumentor().instrument() doesn't monkeypatch anything -
-        # LlamaIndex's own classes already emit span/event notifications to a
-        # global dispatcher regardless of listeners; instrument() just
-        # registers a listener on it, wired to whatever OTel TracerProvider is
-        # currently active (Langfuse's, since the client above registers
-        # itself as that provider on construction - hence the ordering here).
-        # The library already no-ops a repeat call internally (it walks the
-        # dispatcher's existing handlers and skips re-adding), so this flag
-        # isn't needed for correctness - it just avoids that call's warning
-        # print and handler-list walk on every repeat init_tracing() call.
+        # instrument() registers a listener on LlamaIndex's own event
+        # dispatcher, wired to the Langfuse client's TracerProvider above -
+        # not a monkeypatch. Already idempotent internally; this flag just
+        # skips its repeat-call warning print.
         from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 
         LlamaIndexInstrumentor().instrument()
