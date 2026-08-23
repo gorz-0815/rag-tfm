@@ -30,9 +30,7 @@ def test_main_records_answer_and_sources_as_span_output(monkeypatch, capsys):
 
     fake_span = FakeSpan()
     monkeypatch.setattr(ask.tracing, "traced_span", lambda *a, **kw: fake_span)
-    monkeypatch.setattr(
-        ask, "ask_no_context", lambda q: {"answer": "Paris.", "sources": []}
-    )
+    monkeypatch.setattr(ask, "ask_no_context", lambda q: {"answer": "Paris.", "sources": []})
 
     ask.main()
 
@@ -47,9 +45,7 @@ def test_main_works_with_a_noop_span(monkeypatch, capsys):
     monkeypatch.setattr(ask.tracing, "init_tracing", lambda: None)
     monkeypatch.setattr(ask.tracing, "flush_tracing", lambda: None)
     monkeypatch.setattr(ask.tracing, "traced_span", lambda *a, **kw: nullcontext())
-    monkeypatch.setattr(
-        ask, "ask_no_context", lambda q: {"answer": "Paris.", "sources": []}
-    )
+    monkeypatch.setattr(ask, "ask_no_context", lambda q: {"answer": "Paris.", "sources": []})
 
     ask.main()  # must not raise
 

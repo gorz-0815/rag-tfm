@@ -25,9 +25,7 @@ def _model_already_cached() -> bool:
     import os
     from pathlib import Path
 
-    cache_home = Path(
-        os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")
-    )
+    cache_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
     cache_dir_name = "models--" + config.EMBEDDING_MODEL.replace("/", "--")
     return (cache_home / "hub" / cache_dir_name).is_dir()
 
