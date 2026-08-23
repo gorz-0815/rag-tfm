@@ -126,7 +126,7 @@ def test_ask_full_doc_with_missing_manual_skips_llm_call(tmp_path, monkeypatch):
 
     result = query.ask_full_doc("What is the warranty period?", tmp_path / "missing.pdf")
 
-    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": []}
+    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": [], "contexts": []}
 
 
 def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
@@ -143,6 +143,7 @@ def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
+    assert result["contexts"] == ["Soak the cartridge for 15 minutes before use."]
     assert len(fake_llm.messages_seen) == 1
     system_message, user_message = fake_llm.messages_seen[0]
     assert system_message.content == query.load_system_prompt()

@@ -19,7 +19,7 @@ def test_load_eval_qa_returns_question_ground_truth_pairs():
         assert item["ground_truth"]
 
 
-def test_run_conditions_runs_both_conditions_per_question(monkeypatch):
+def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
     eval_qa = [{"question": "How long should I soak the cartridge?", "ground_truth": "15 minutes."}]
 
     def fake_ask_rag(question, manual_path):
@@ -29,10 +29,18 @@ def test_run_conditions_runs_both_conditions_per_question(monkeypatch):
             "contexts": ["Soak the cartridge for 15 minutes."],
         }
 
+    def fake_ask_full_doc(question, manual_path):
+        return {
+            "answer": "Soak the cartridge for 15 minutes before use.",
+            "sources": ["manual.pdf"],
+            "contexts": ["<the whole manual text>"],
+        }
+
     def fake_ask_no_context(question):
         return {"answer": "Usually about 30 minutes.", "sources": []}
 
     monkeypatch.setattr(eval_module, "ask_rag", fake_ask_rag)
+    monkeypatch.setattr(eval_module, "ask_full_doc", fake_ask_full_doc)
     monkeypatch.setattr(eval_module, "ask_no_context", fake_ask_no_context)
 
     rows = eval_module.run_conditions(eval_qa, "manual.pdf")
@@ -43,6 +51,8 @@ def test_run_conditions_runs_both_conditions_per_question(monkeypatch):
             "reference": "15 minutes.",
             "rag_answer": "Soak for 15 minutes.",
             "rag_contexts": ["Soak the cartridge for 15 minutes."],
+            "full_doc_answer": "Soak the cartridge for 15 minutes before use.",
+            "full_doc_contexts": ["<the whole manual text>"],
             "no_context_answer": "Usually about 30 minutes.",
         }
     ]
@@ -65,6 +75,7 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
                 }
             ]
         ),
+        "full_doc": pd.DataFrame([{"faithfulness": 0.95, "answer_relevancy": 0.85}]),
         "no_context": pd.DataFrame([{"faithfulness": 0.2, "answer_relevancy": 0.75}]),
     }
 
@@ -72,9 +83,11 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
 
     raw = json.loads((tmp_path / "eval_results.json").read_text(encoding="utf-8"))
     assert raw["rag"][0]["faithfulness"] == 0.9
+    assert raw["full_doc"][0]["faithfulness"] == 0.95
     assert raw["no_context"][0]["faithfulness"] == 0.2
 
     report = (tmp_path / "eval_results.md").read_text(encoding="utf-8")
     assert "0.9" in report
+    assert "0.95" in report
     assert "0.2" in report
     assert "Interpretation" in report
