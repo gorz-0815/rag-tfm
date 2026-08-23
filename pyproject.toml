@@ -12,4 +12,5 @@ select = ["E", "W", "F", "I", "UP", "B", "SIM", "C4", "N", "PTH", "RUF", "PLC041
 "src/query.py" = ["PLC0415"]
 "src/ingest.py" = ["PLC0415"]
 "src/vector_store.py" = ["PLC0415"]
+"src/tracing.py" = ["PLC0415"]
 "tests/test_ask_live.py" = ["PLC0415"]

@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 
+from src import tracing
 from src.query import ask_full_doc, ask_no_context, ask_rag
 
 
@@ -33,18 +34,29 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    tracing.init_tracing()
+
     if args.no_context:
-        result = ask_no_context(args.question)
+        span_name, ask = "ask_no_context", lambda: ask_no_context(args.question)
     elif not args.manual_path:
         parser.error("manual_path is required unless --no-context is given")
+        return
     elif args.full_doc:
-        result = ask_full_doc(args.question, args.manual_path)
+        span_name, ask = "ask_full_doc", lambda: ask_full_doc(args.question, args.manual_path)
     else:
-        result = ask_rag(args.question, args.manual_path)
+        span_name, ask = "ask_rag", lambda: ask_rag(args.question, args.manual_path)
+
+    with tracing.traced_span(span_name, question=args.question) as span:
+        result = ask()
+
+        if span is not None:
+            span.update(output=result["answer"], metadata={"sources": result["sources"]})
 
     print(result["answer"])
     if result["sources"]:
         print("\nSources: " + ", ".join(result["sources"]))
+
+    tracing.flush_tracing()
 
 
 if __name__ == "__main__":

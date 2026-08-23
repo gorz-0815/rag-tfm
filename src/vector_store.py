@@ -17,7 +17,26 @@ def _client():
     return chromadb.PersistentClient(path=str(config.STORAGE_DIR))
 
 
+def _model_already_cached() -> bool:
+    """True if config.EMBEDDING_MODEL is in the local HF cache. Checks the
+    filesystem directly, not via huggingface_hub - importing it would freeze
+    HF_HUB_OFFLINE as unset before we get a chance to set it.
+    """
+    import os
+    from pathlib import Path
+
+    cache_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+    cache_dir_name = "models--" + config.EMBEDDING_MODEL.replace("/", "--")
+    return (cache_home / "hub" / cache_dir_name).is_dir()
+
+
 def configure_embed_model() -> None:
+    import os
+
+    # Must run before importing HuggingFaceEmbedding - see _model_already_cached.
+    if _model_already_cached():
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
     from llama_index.core import Settings
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
