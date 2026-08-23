@@ -45,24 +45,37 @@ def test_run_conditions_runs_all_three_conditions_per_question(monkeypatch):
 
     rows = eval_module.run_conditions(eval_qa, "manual.pdf")
 
-    assert rows == [
-        {
-            "question": "How long should I soak the cartridge?",
-            "reference": "15 minutes.",
-            "rag_answer": "Soak for 15 minutes.",
-            "rag_contexts": ["Soak the cartridge for 15 minutes."],
-            "full_doc_answer": "Soak the cartridge for 15 minutes before use.",
-            "full_doc_contexts": ["<the whole manual text>"],
-            "no_context_answer": "Usually about 30 minutes.",
-        }
-    ]
+    assert len(rows) == 1
+    row = rows[0]
+    latencies = {
+        key: row.pop(key) for key in ["rag_latency_s", "full_doc_latency_s", "no_context_latency_s"]
+    }
+    assert row == {
+        "question": "How long should I soak the cartridge?",
+        "reference": "15 minutes.",
+        "rag_answer": "Soak for 15 minutes.",
+        "rag_contexts": ["Soak the cartridge for 15 minutes."],
+        "full_doc_answer": "Soak the cartridge for 15 minutes before use.",
+        "full_doc_contexts": ["<the whole manual text>"],
+        "no_context_answer": "Usually about 30 minutes.",
+    }
+    assert all(latency >= 0 for latency in latencies.values())
 
 
 def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatch):
     monkeypatch.setattr(eval_module.config, "RESULTS_DIR", tmp_path)
 
     rows = [
-        {"question": "Q1", "reference": "R1", "rag_answer": "A1", "no_context_answer": "B1"},
+        {
+            "question": "Q1",
+            "reference": "R1",
+            "rag_answer": "A1",
+            "rag_latency_s": 1.2,
+            "full_doc_answer": "C1",
+            "full_doc_latency_s": 2.5,
+            "no_context_answer": "B1",
+            "no_context_latency_s": 0.5,
+        },
     ]
     scores = {
         "rag": pd.DataFrame(
@@ -85,9 +98,11 @@ def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatc
     assert raw["rag"][0]["faithfulness"] == 0.9
     assert raw["full_doc"][0]["faithfulness"] == 0.95
     assert raw["no_context"][0]["faithfulness"] == 0.2
+    assert raw["latency_s"] == [{"question": "Q1", "rag": 1.2, "full_doc": 2.5, "no_context": 0.5}]
 
     report = (tmp_path / "eval_results.md").read_text(encoding="utf-8")
     assert "0.9" in report
     assert "0.95" in report
     assert "0.2" in report
+    assert "Latency" in report
     assert "Interpretation" in report
