@@ -12,8 +12,7 @@
 A small RAG (Retrieval-Augmented Generation) demo: ask questions about a
 technical manual and get grounded, cited answers, with end-to-end LLMOps
 tracing and a comparative evaluation against a no-RAG baseline. Built to
-demonstrate RAG development, tracing, and evaluation practice end to end —
-not just a pipeline that runs, but numbers that show *why* retrieval helps.
+demonstrate RAG development, tracing, and evaluation practice end to end.
 
 ## Architecture
 
