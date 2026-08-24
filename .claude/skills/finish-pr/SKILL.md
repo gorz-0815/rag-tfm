@@ -23,8 +23,8 @@ For each thread where `isResolved` is `false`:
 ### 2. Completion / archive check
 
 - If the project tracks work as an OpenSpec change (`openspec/changes/<name>/tasks.md`), count checked vs. unchecked tasks for the *whole* change, not just this PR's section.
-- All checked → run (or tell the user to run) `openspec-archive-change` to move it to `openspec/changes/archive/` and sync delta specs into `openspec/specs/`.
-- Not all checked → report status honestly (e.g. "21/39 done, Sections 5-7 still open") and do **not** archive. A PR finishing its own scope does not mean the whole tracked change is done.
+- All checked → the change is archive-ready. Don't run `openspec-archive-change` yet and don't just tell the user to go run it themselves — flag it as archive-ready in the summary (step 5) and close with an explicit question asking whether to archive it now. Only invoke `openspec-archive-change` if they say yes.
+- Not all checked → report status honestly (e.g. "21/39 done, Sections 5-7 still open") and do **not** archive, and don't ask — there's nothing to archive yet. A PR finishing its own scope does not mean the whole tracked change is done.
 - If the project doesn't use OpenSpec, look for whatever completion artifact it does use (a tracking issue, a checklist in the PR description) and apply the same "don't declare done until everything's actually checked" discipline.
 
 ### 3. Guard-check audit
@@ -48,7 +48,9 @@ Group by underlying theme (not literal wording — "comment too verbose" and "sh
 
 ### 5. Summarize
 
-Short report: thread-resolution status (how many unresolved, how many done-but-unresolved and ready for the user to close, how many still need real work), completion status (and whether anything got archived), what guard checks ran and their result, what got automated vs. documented from the review-history scan (with commit references), and anything explicitly left as-is with a one-line reason.
+Short report: thread-resolution status (how many unresolved, how many done-but-unresolved and ready for the user to close, how many still need real work), completion status, what guard checks ran and their result, what got automated vs. documented from the review-history scan (with commit references), and anything explicitly left as-is with a one-line reason.
+
+If step 2 found the change archive-ready, end the report with an explicit closing question asking whether to run `openspec-archive-change` now — don't fold it into the summary as a passive note, and don't archive without a yes. If it wasn't archive-ready, no question needed; just state what's still open.
 
 ## Guardrails
 
