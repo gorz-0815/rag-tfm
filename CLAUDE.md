@@ -91,6 +91,18 @@ no-context baseline). Planning is done; implementation happens through OpenSpec.
   repeating it. Flagged three separate times in PR #8 review (`src/query.py`,
   `src/tracing.py`, `src/vector_store.py`) — a real recurring habit after
   debugging something non-trivial, not a one-off.
+- **User-facing docs (README, `docs/`) describe current behavior only —
+  don't contrast it against an alternative that was never built or was
+  explicitly rejected** (e.g. "named on the CLI, never auto-discovered from
+  a directory", "not a custom logger"). That framing defends a past design
+  decision instead of just stating what the thing does today; the decision
+  itself belongs in the (soon-to-be-archived) OpenSpec `design.md`, not in
+  docs a reader hits first. Flagged three times in one PR #10 review pass
+  (`README.md`'s intro, Tracing section, and its `docs/architecture.md`
+  counterpart) — a real recurring habit when writing up a design that
+  considered and dropped other approaches, not a one-off. Before adding a
+  "not X" / "never Y" clause to a doc, ask whether it's describing current
+  behavior (keep it) or defending against a road not taken (cut it).
 - Never commit `.env`, `storage/`, or real contents of `data/manuals/` — the
   corpus is user-supplied and gitignored; only a `.gitkeep` belongs in git for
   now (see `sample-corpus-sourcing` stub for the eventual sample corpus).
