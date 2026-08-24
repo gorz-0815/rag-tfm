@@ -31,6 +31,37 @@ def _cost_usd(usage: dict) -> float | None:
     )
 
 
+def build_row(
+    question: str,
+    reference: str,
+    rag_result: dict,
+    rag_latency_s: float,
+    full_doc_result: dict,
+    full_doc_latency_s: float,
+    no_context_result: dict,
+    no_context_latency_s: float,
+) -> dict:
+    """Flatten one eval question's three ask_* results (answer, contexts,
+    usage) plus their timings into the single flat row shape the rest of
+    this module (and Ragas dataset-building in src/eval.py) reads.
+    """
+    return {
+        "question": question,
+        "reference": reference,
+        "rag_answer": rag_result["answer"],
+        "rag_contexts": rag_result["contexts"],
+        "rag_latency_s": rag_latency_s,
+        "rag_usage": rag_result["usage"],
+        "full_doc_answer": full_doc_result["answer"],
+        "full_doc_contexts": full_doc_result["contexts"],
+        "full_doc_latency_s": full_doc_latency_s,
+        "full_doc_usage": full_doc_result["usage"],
+        "no_context_answer": no_context_result["answer"],
+        "no_context_latency_s": no_context_latency_s,
+        "no_context_usage": no_context_result["usage"],
+    }
+
+
 def _relevancy_interpretation(baseline_relevancy: float | None, rag_relevancy: float | None) -> str:
     if baseline_relevancy is None or rag_relevancy is None:
         return ""
