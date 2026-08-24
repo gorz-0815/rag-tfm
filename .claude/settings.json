@@ -11,5 +11,16 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "spec-pr-loop": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/p-eh/spec-pr-loop.git"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "spec-pr-loop@spec-pr-loop": true
   }
 }
