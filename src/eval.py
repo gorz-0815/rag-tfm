@@ -87,23 +87,6 @@ def _build_ragas_dataset(rows: list[dict], answer_key: str, contexts_key: str):
     return EvaluationDataset.from_list(samples)
 
 
-def _patch_ragas_vertexai_import() -> None:
-    """installed langchain-community (>=0.4) dropped chat_models.vertexai,
-    but ragas 0.4.x still imports ChatVertexAI at module load time for an
-    isinstance check we never hit (Anthropic-only here) - stub it out so
-    `import ragas` doesn't crash on a provider we don't use.
-    """
-    import sys
-    import types
-
-    module_name = "langchain_community.chat_models.vertexai"
-    if module_name in sys.modules:
-        return
-    stub = types.ModuleType(module_name)
-    stub.ChatVertexAI = type("ChatVertexAI", (), {})
-    sys.modules[module_name] = stub
-
-
 class _LlamaIndexEmbeddingsAdapter:
     """Exposes a langchain-shaped embed_query/embed_documents interface over
     an already-loaded llama_index embedding model, so Ragas'
@@ -127,8 +110,6 @@ def score_conditions(rows: list[dict]) -> dict:
     for all three, context_precision + context_recall for RAG only (the only
     condition with an actual retrieval step to score).
     """
-    _patch_ragas_vertexai_import()
-
     from langchain_anthropic import ChatAnthropic
     from llama_index.core import Settings
     from ragas import evaluate
