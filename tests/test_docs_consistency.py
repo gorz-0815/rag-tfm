@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DOC_FILES = [
     PROJECT_ROOT / "docs" / "architecture.md",
     PROJECT_ROOT / "data" / "sample-questions.md",
-    PROJECT_ROOT / "openspec" / "changes" / "rag-tfm-mvp" / "specs" / "manual-qa-cli" / "spec.md",
+    PROJECT_ROOT / "openspec" / "specs" / "manual-qa-cli" / "spec.md",
     PROJECT_ROOT / "README.md",
 ]
 
