@@ -10,6 +10,11 @@ RAG are both judged against RAG's retrieved chunks; full-doc against the
 full manual text. context_precision/recall stay RAG-only - only RAG has an
 actual retrieval step to score.
 
+Answer relevancy (Ragas' metric): the judge LLM reverse-generates several
+questions the answer would suit, then scores their embedding similarity to
+the question actually asked - independent of context, purely whether the
+answer stays on-topic rather than hedging or going generic.
+
 Heavy imports (ragas, langchain-anthropic) are kept inside main() so this
 module stays importable without the full stack.
 
