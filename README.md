@@ -8,8 +8,7 @@ not just a pipeline that runs, but numbers that show *why* retrieval helps.
 
 ## Architecture
 
-Two phases against one manual at a time, named explicitly on the CLI —
-never auto-discovered from a directory:
+Two phases against one manual at a time, named explicitly on the CLI:
 
 1. **Ingest** (`python -m src.ingest <manual.pdf>`, run once per manual):
    chunk the PDF, embed each chunk locally (`BAAI/bge-small-en-v1.5`), and
@@ -19,7 +18,7 @@ never auto-discovered from a directory:
    one of three modes — **RAG** (retrieve top-k chunks, answer from those),
    **`--full-doc`** (skip retrieval, send the whole manual as context), or
    **`--no-context`** (bare question, no manual content at all — the
-   baseline). Every mode calls Claude (Anthropic) for generation.
+   baseline). Every mode calls Claude (Anthropic) for answer generation.
 
 Full component-level diagrams and a walkthrough of what runs locally vs.
 over the network: [`docs/architecture.md`](docs/architecture.md).
@@ -62,17 +61,17 @@ More example questions: [`data/sample-questions.md`](data/sample-questions.md).
 Every `ask` invocation, in every mode, is traced end-to-end in
 [Langfuse](https://langfuse.com/) — retrieved chunks (RAG), the prompt
 sent, per-step latency, and token usage — via OpenTelemetry instrumentation
-(`openinference-instrumentation-llama-index`), not a custom logger. Tracing
-degrades gracefully: if Langfuse is unreachable, or no credentials are
-configured at all, the CLI still returns the answer and either prints a
-warning or says nothing, rather than failing the query.
+(`openinference-instrumentation-llama-index`). Tracing degrades gracefully:
+with no Langfuse credentials configured, tracing is silently skipped; with
+credentials configured but Langfuse unreachable, the CLI still prints the
+answer and adds a warning about the failed trace flush — either way, the
+query itself never fails because of a tracing problem.
 
 A full walkthrough of one question traced in all three modes — trace IDs,
 per-step latency breakdown, and the token counts that later feed the eval's
 cost numbers — is in
-[`results/sample_trace.md`](results/sample_trace.md). One highlight: the
-single largest cost in a RAG trace isn't the Claude call, it's loading the
-local embedding model fresh on every single-shot CLI invocation (~7s) — see
+[`results/sample_trace.md`](results/sample_trace.md). Note: loading local
+embeddings gives RAG a disadvantage in single-shot CLI invocations — see
 the trade-offs section below.
 
 ## Evaluation
@@ -143,7 +142,7 @@ complete interpretation: [`results/eval_results.md`](results/eval_results.md)
 
 The app indexes and answers questions about **one manual at a time**,
 always named explicitly on the command line
-(`python -m src.ingest <manual.pdf>`) — never scanned from a directory. A
+(`python -m src.ingest <manual.pdf>`). A
 synthetic sample manual (`data/manuals/aquaflow-200-manual.pdf`, generated
 for this repo, not a real product) is committed so the app works out of the
 box; point `src.ingest`/`src.ask` at your own PDF instead if you want to.
@@ -176,6 +175,9 @@ dropped:
   mitigating retrieved chunks that read as disjoint fragments
 - [`sample-corpus-sourcing`](openspec/changes/sample-corpus-sourcing/) —
   a curated, openly-licensed multi-manual sample corpus
+- [`rag-context-window-growth`](openspec/changes/rag-context-window-growth/) —
+  whether RAG's accumulated context (and answer quality) degrades over a
+  longer multi-turn session, once `interactive-cli` exists
 
 ## License
 
