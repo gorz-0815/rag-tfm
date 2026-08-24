@@ -1,7 +1,7 @@
 # RAG pipeline anatomy
 
-The manual is always named explicitly on the command line, never
-auto-discovered from a directory. Two separate runs make up the pipeline:
+The manual is always named explicitly on the command line. Two separate
+runs make up the pipeline:
 `python -m src.ingest <manual.pdf>` builds the vector index once, offline;
 `python -m src.ask` answers a question against it every time you run it.
 The diagrams below trace what each one actually touches — including which
