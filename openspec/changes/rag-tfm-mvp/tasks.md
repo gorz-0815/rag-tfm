@@ -49,11 +49,11 @@
 
 ## 7. README and Publish Prep
 
-- [ ] 7.1 Write README: what/why, setup (single documented path), architecture description
-- [ ] 7.2 Write README tracing section referencing `results/sample_trace.md`
-- [ ] 7.3 Write README eval section referencing `results/eval_results.md`, interpreted not just raw numbers
-- [ ] 7.4 Write README cost/latency/scalability trade-offs section (chunking trade-off, per-query cost estimate, local Chroma scaling ceiling, what production would need instead)
-- [ ] 7.5 Write README corpus note: the app works with one manual at a time, named explicitly on the CLI (`python -m src.ingest <manual.pdf>`); a synthetic sample manual is committed at `data/manuals/aquaflow-200-manual.pdf` for out-of-the-box use, or point it at your own PDF
-- [ ] 7.6 Note explicitly in README: demo project, not production-ready; future work tracked as separate stub changes under `openspec/changes/` (interactive CLI, pluggable LLM backend, sample-corpus sourcing, and a search-tool eval condition)
-- [ ] 7.7 Final secrets check: confirm no `.env`, API keys, `storage/`, or `data/manuals/` private content in `git status` or history before first commit
-- [ ] 7.8 `git init`, first commit; add `github` remote (`https://github.com/gorz-0815/rag-tfm.git`) once the empty repo exists on GitHub — do not push without separate confirmation
+- [x] 7.1 Write README: what/why, setup (single documented path), architecture description
+- [x] 7.2 Write README tracing section referencing `results/sample_trace.md`
+- [x] 7.3 Write README eval section referencing `results/eval_results.md`, interpreted not just raw numbers
+- [x] 7.4 Write README cost/latency/scalability trade-offs section (chunking trade-off, per-query cost estimate, local Chroma scaling ceiling, what production would need instead)
+- [x] 7.5 Write README corpus note: the app works with one manual at a time, named explicitly on the CLI (`python -m src.ingest <manual.pdf>`); a synthetic sample manual is committed at `data/manuals/aquaflow-200-manual.pdf` for out-of-the-box use, or point it at your own PDF
+- [x] 7.6 Note explicitly in README: demo project, not production-ready; future work tracked as separate stub changes under `openspec/changes/` — listed all 7 current stubs (interactive-cli, pluggable-llm-backend, openai-embeddings-option, retrieval-technique-selector, dynamic-chunking-by-doc-size, rag-context-continuity, sample-corpus-sourcing), reconciled from the task's stale 4-item list since no separate "search-tool eval condition" stub was ever created (that idea is folded into design.md's Non-Goals, not a standalone stub)
+- [x] 7.7 Final secrets check: confirm no `.env`, API keys, `storage/`, or `data/manuals/` private content in `git status` or history before first commit — verified 2026-08-24: `git ls-files` and `git log --all --diff-filter=A --name-only` both confirm `.env` and `storage/` were never tracked; only `data/manuals/.gitkeep` and the intentional `aquaflow-200-manual.pdf` sample are tracked under `data/manuals/`
+- [x] 7.8 `git init`, first commit; add `github` remote... — reinterpreted: this task predates the repo's actual history (already `git init`'d, remote added, and pushed since PR #1/#3-#9); nothing left to do here for this PR beyond its own final secrets check (7.7, done above) before pushing
