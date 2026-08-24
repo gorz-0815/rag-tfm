@@ -9,6 +9,32 @@ import pandas as pd
 from src import eval_report
 
 
+def test_build_row_flattens_three_ask_results_and_timings():
+    rag_result = {"answer": "A1", "contexts": ["ctx-a"], "usage": {"input_tokens": 1}}
+    full_doc_result = {"answer": "C1", "contexts": ["ctx-c"], "usage": {"input_tokens": 2}}
+    no_context_result = {"answer": "B1", "contexts": [], "usage": {"input_tokens": 3}}
+
+    row = eval_report.build_row(
+        "Q1", "R1", rag_result, 1.2, full_doc_result, 2.5, no_context_result, 0.5
+    )
+
+    assert row == {
+        "question": "Q1",
+        "reference": "R1",
+        "rag_answer": "A1",
+        "rag_contexts": ["ctx-a"],
+        "rag_latency_s": 1.2,
+        "rag_usage": {"input_tokens": 1},
+        "full_doc_answer": "C1",
+        "full_doc_contexts": ["ctx-c"],
+        "full_doc_latency_s": 2.5,
+        "full_doc_usage": {"input_tokens": 2},
+        "no_context_answer": "B1",
+        "no_context_latency_s": 0.5,
+        "no_context_usage": {"input_tokens": 3},
+    }
+
+
 def test_write_results_writes_json_and_markdown_with_scores(tmp_path, monkeypatch):
     monkeypatch.setattr(eval_report.config, "RESULTS_DIR", tmp_path)
 

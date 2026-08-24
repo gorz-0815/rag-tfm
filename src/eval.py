@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 
 from src import config
-from src.eval_report import write_results
+from src.eval_report import build_row, write_results
 from src.query import ask_full_doc, ask_no_context, ask_rag
 
 
@@ -44,9 +44,7 @@ def _timed(fn, *args):
 
 def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
     """Run every eval question through all three conditions, returning one
-    row per question with each answer, each condition's own retrieved/given
-    contexts, wall-clock latency, token usage, and the ground-truth
-    reference. USD cost is derived from usage later, in eval_report.
+    flat row per question (see eval_report.build_row for the shape).
     """
     rows = []
     for item in eval_qa:
@@ -55,21 +53,16 @@ def run_conditions(eval_qa: list[dict], manual_path: Path) -> list[dict]:
         full_doc_result, full_doc_latency_s = _timed(ask_full_doc, question, manual_path)
         no_context_result, no_context_latency_s = _timed(ask_no_context, question)
         rows.append(
-            {
-                "question": question,
-                "reference": item["ground_truth"],
-                "rag_answer": rag_result["answer"],
-                "rag_contexts": rag_result["contexts"],
-                "rag_latency_s": rag_latency_s,
-                "rag_usage": rag_result["usage"],
-                "full_doc_answer": full_doc_result["answer"],
-                "full_doc_contexts": full_doc_result["contexts"],
-                "full_doc_latency_s": full_doc_latency_s,
-                "full_doc_usage": full_doc_result["usage"],
-                "no_context_answer": no_context_result["answer"],
-                "no_context_latency_s": no_context_latency_s,
-                "no_context_usage": no_context_result["usage"],
-            }
+            build_row(
+                question,
+                item["ground_truth"],
+                rag_result,
+                rag_latency_s,
+                full_doc_result,
+                full_doc_latency_s,
+                no_context_result,
+                no_context_latency_s,
+            )
         )
     return rows
 
