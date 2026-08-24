@@ -40,12 +40,12 @@
 
 ## 6. Comparative Eval (`comparative-eval` capability)
 
-- [ ] 6.1 Write `data/eval_qa.json`: ~15-20 hand-written questions against the single manual named at eval time (per the single-manual-by-path model established in PR #7 review — no directory-wide scan), each with a manually-verified ground-truth answer (not committed with real manual content until a corpus decision is made — see the `sample-corpus-sourcing` stub change; the committed synthetic `data/manuals/aquaflow-200-manual.pdf` from PR #7 could serve as that eval target)
-- [ ] 6.2 Implement `src/eval.py`: run every eval question through both no-context and RAG conditions using `src/query.py`'s functions
-- [ ] 6.3 Build a Ragas `EvaluationDataset` from the results; wrap Claude (`langchain-anthropic` + `LangchainLLMWrapper`) as judge and the local HF embeddings (`LangchainEmbeddingsWrapper`) for context metrics
-- [ ] 6.4 Score faithfulness + answer_relevancy for both conditions; context_precision + context_recall for RAG only
-- [ ] 6.5 Write `results/eval_results.json` (raw) and `results/eval_results.md` (comparison table + prose interpretation of the gap)
-- [ ] 6.6 Verify: `python -m src.eval` completes end-to-end and produces a results table with a visible RAG-vs-no-context gap on manual-specific questions
+- [x] 6.1 Write `data/eval_qa.json`: ~15-20 hand-written questions against the single manual named at eval time (per the single-manual-by-path model established in PR #7 review — no directory-wide scan), each with a manually-verified ground-truth answer (not committed with real manual content until a corpus decision is made — see the `sample-corpus-sourcing` stub change; the committed synthetic `data/manuals/aquaflow-200-manual.pdf` from PR #7 could serve as that eval target)
+- [x] 6.2 Implement `src/eval.py`: run every eval question through both no-context and RAG conditions using `src/query.py`'s functions
+- [x] 6.3 Build a Ragas `EvaluationDataset` from the results; wrap Claude (`langchain-anthropic` + `LangchainLLMWrapper`) as judge and the local HF embeddings (`LangchainEmbeddingsWrapper`) for context metrics
+- [x] 6.4 Score faithfulness + answer_relevancy for both conditions; context_precision + context_recall for RAG only
+- [x] 6.5 Write `results/eval_results.json` (raw) and `results/eval_results.md` (comparison table + prose interpretation of the gap)
+- [x] 6.6 Verify: `python -m src.eval` completes end-to-end and produces a results table with a visible RAG-vs-no-context gap on manual-specific questions — verified 2026-08-23 against `data/manuals/aquaflow-200-manual.pdf`: faithfulness 0.95 (RAG) vs. 0.07 (no-context), answer relevancy 0.738 vs. 0.053, context precision 0.616, context recall 0.889; full-doc scored alongside as an extra (non-spec) data point at 0.964 faithfulness, on par with RAG. Per-question wall-clock latency, Anthropic's actual reported per-call token usage, and derived USD cost were also captured: no-context was slowest (2.87s avg) despite doing the least work, because its answers ran ~2.7x longer without a "concise, context-only" system prompt constraining it; full-doc (2.01s) wasn't slower than RAG (~2.3s excluding a one-time embedding-model load on the first call) despite sending the whole manual, since input-token prefill isn't the latency bottleneck. Cost is where full-doc's larger context actually shows up: full-doc averages 2891 input tokens/query vs. RAG's 1786 (output tokens comparable, ~57-59), giving $0.00318/query vs. RAG's $0.00208 (~1.5x). See `results/eval_results.md`.
 
 ## 7. README and Publish Prep
 

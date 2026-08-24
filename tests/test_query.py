@@ -7,10 +7,23 @@ For a real end-to-end call against the Anthropic API, see test_ask_live.py.
 
 from src import query
 
+FAKE_USAGE = {"input_tokens": 10, "output_tokens": 20}
+
+
+class FakeUsage:
+    def __init__(self, input_tokens, output_tokens):
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+
+
+def _fake_raw(input_tokens, output_tokens):
+    return {"usage": FakeUsage(input_tokens, output_tokens)}
+
 
 class FakeLLMResponse:
-    def __init__(self, text):
+    def __init__(self, text, raw):
         self._text = text
+        self.raw = raw
 
     def __str__(self):
         return self._text
@@ -22,26 +35,29 @@ class FakeChatMessage:
 
 
 class FakeChatResponse:
-    def __init__(self, text):
+    def __init__(self, text, raw):
         self.message = FakeChatMessage(text)
+        self.raw = raw
 
 
 class FakeLLM:
     """Fakes both llm.complete() (no-context mode) and llm.chat() (RAG/full-doc
     modes, which send a real system message - see query._ask_with_context)."""
 
-    def __init__(self, text="mocked answer"):
+    def __init__(self, text="mocked answer", input_tokens=10, output_tokens=20):
         self.text = text
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
         self.prompts_seen = []
         self.messages_seen = []
 
     def complete(self, prompt):
         self.prompts_seen.append(prompt)
-        return FakeLLMResponse(self.text)
+        return FakeLLMResponse(self.text, _fake_raw(self.input_tokens, self.output_tokens))
 
     def chat(self, messages):
         self.messages_seen.append(messages)
-        return FakeChatResponse(self.text)
+        return FakeChatResponse(self.text, _fake_raw(self.input_tokens, self.output_tokens))
 
 
 class FakeNode:
@@ -75,7 +91,11 @@ def test_ask_no_context_returns_llm_answer(monkeypatch):
 
     result = query.ask_no_context("What is the capital of France?")
 
-    assert result == {"answer": "Paris is the capital of France.", "sources": []}
+    assert result == {
+        "answer": "Paris is the capital of France.",
+        "sources": [],
+        "usage": FAKE_USAGE,
+    }
     assert fake_llm.prompts_seen == ["What is the capital of France?"]
 
 
@@ -89,7 +109,12 @@ def test_ask_rag_with_no_retrieved_nodes_skips_llm_call(tmp_path, monkeypatch):
 
     result = query.ask_rag("What is the warranty period?", tmp_path / "manual.pdf")
 
-    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": []}
+    assert result == {
+        "answer": query.NO_CONTEXT_MESSAGE,
+        "sources": [],
+        "contexts": [],
+        "usage": query.NO_USAGE,
+    }
 
 
 def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch):
@@ -106,6 +131,11 @@ def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
+    assert result["contexts"] == [
+        "Soak the cartridge for 15 minutes.",
+        "Rinse under running water.",
+    ]
+    assert result["usage"] == FAKE_USAGE
     assert len(fake_llm.messages_seen) == 1
     system_message, user_message = fake_llm.messages_seen[0]
     assert system_message.content == query.load_system_prompt()
@@ -122,7 +152,12 @@ def test_ask_full_doc_with_missing_manual_skips_llm_call(tmp_path, monkeypatch):
 
     result = query.ask_full_doc("What is the warranty period?", tmp_path / "missing.pdf")
 
-    assert result == {"answer": query.NO_CONTEXT_MESSAGE, "sources": []}
+    assert result == {
+        "answer": query.NO_CONTEXT_MESSAGE,
+        "sources": [],
+        "contexts": [],
+        "usage": query.NO_USAGE,
+    }
 
 
 def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
@@ -139,6 +174,8 @@ def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
 
     assert result["answer"] == "Soak for 15 minutes, then rinse."
     assert result["sources"] == ["manual-a.pdf"]
+    assert result["contexts"] == ["Soak the cartridge for 15 minutes before use."]
+    assert result["usage"] == FAKE_USAGE
     assert len(fake_llm.messages_seen) == 1
     system_message, user_message = fake_llm.messages_seen[0]
     assert system_message.content == query.load_system_prompt()
