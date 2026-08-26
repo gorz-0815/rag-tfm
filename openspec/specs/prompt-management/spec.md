@@ -2,7 +2,7 @@
 
 Sources the app's prompts from Langfuse's prompt management (versioned, editable without a code deploy) instead of local files, while still working offline, so prompt iteration doesn't require touching the codebase.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Prompts are fetched from Langfuse
 When Langfuse is configured and reachable, the system SHALL fetch the system prompt and the context-answer template from Langfuse using the `production` label, rather than reading them from local files.
@@ -22,9 +22,9 @@ If Langfuse is unreachable, not configured, or the named prompts don't exist the
 - **WHEN** no Langfuse credentials are configured
 - **THEN** the system uses the local prompt files directly, without attempting a Langfuse fetch
 
-### Requirement: Generations link to the prompt version used
-When a query is traced and its prompt was fetched from Langfuse, the resulting generation SHALL be linked to that specific prompt version.
+### Requirement: Traces record which prompt version produced a generation
+When a query is traced and its prompt was fetched from Langfuse, the trace SHALL record the prompt name and version that produced the LLM call, visible alongside that call in the Langfuse UI.
 
 #### Scenario: Traced generation shows its source prompt
 - **WHEN** a RAG or full-doc query is answered using a Langfuse-fetched prompt, and tracing is enabled
-- **THEN** the Langfuse trace's generation for that LLM call is linked to the prompt name and version that produced it
+- **THEN** the trace containing that LLM call also shows the prompt name and version used to produce it
