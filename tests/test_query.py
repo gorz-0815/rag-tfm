@@ -99,6 +99,7 @@ def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch
     ]
     fake_llm = FakeLLM("Soak for 15 minutes, then rinse.")
 
+    monkeypatch.setattr(query.tracing, "is_configured", lambda: False)
     monkeypatch.setattr(query, "load_manuals_index", lambda manual_path: FakeIndex(nodes))
     monkeypatch.setattr(query, "_build_llm", lambda: fake_llm)
 
@@ -108,7 +109,7 @@ def test_ask_rag_builds_context_prompt_and_dedupes_sources(tmp_path, monkeypatch
     assert result["sources"] == ["manual-a.pdf"]
     assert len(fake_llm.messages_seen) == 1
     system_message, user_message = fake_llm.messages_seen[0]
-    assert system_message.content == query.load_system_prompt()
+    assert system_message.content == query.load_system_prompt()[0]
     assert "How do I set up a new filter?" in user_message.content
     assert "Soak the cartridge for 15 minutes." in user_message.content
     assert "Rinse under running water." in user_message.content
@@ -130,6 +131,7 @@ def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
     manual_path.touch()
     fake_llm = FakeLLM("Soak for 15 minutes, then rinse.")
 
+    monkeypatch.setattr(query.tracing, "is_configured", lambda: False)
     monkeypatch.setattr(
         query, "_load_manual_text", lambda path: "Soak the cartridge for 15 minutes before use."
     )
@@ -141,7 +143,7 @@ def test_ask_full_doc_sends_the_manual_in_full(tmp_path, monkeypatch):
     assert result["sources"] == ["manual-a.pdf"]
     assert len(fake_llm.messages_seen) == 1
     system_message, user_message = fake_llm.messages_seen[0]
-    assert system_message.content == query.load_system_prompt()
+    assert system_message.content == query.load_system_prompt()[0]
     assert "How do I care for the filter?" in user_message.content
     assert "Soak the cartridge for 15 minutes before use." in user_message.content
 
@@ -150,6 +152,7 @@ def test_ask_full_doc_records_extraction_span_output(tmp_path, monkeypatch):
     manual_path = tmp_path / "manual-a.pdf"
     manual_path.touch()
 
+    monkeypatch.setattr(query.tracing, "is_configured", lambda: False)
     monkeypatch.setattr(
         query, "_load_manual_text", lambda path: "Soak the cartridge for 15 minutes before use."
     )

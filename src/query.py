@@ -37,19 +37,38 @@ def _build_llm():
     return Anthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY)
 
 
-def _ask_with_context(user_prompt: str) -> str:
-    """Send SYSTEM_PROMPT.md as the system message and user_prompt as the
+def _prompt_refs(*prompts) -> dict:
+    """Name/version pairs for each non-None Langfuse prompt, for recording
+    which prompt versions produced a generation.
+
+    `update_current_generation(prompt=...)` doesn't attach here: it needs an
+    already-open generation span, but LlamaIndexInstrumentor only creates
+    that span for the duration of the `llm.chat()`/`llm.complete()` call
+    itself, which hasn't started yet at this point - confirmed empty
+    prompt_name/prompt_version on a real trace. Recording refs as span input
+    instead is the documented fallback (see design.md's Decisions).
+    """
+    return {f"{prompt.name}_version": prompt.version for prompt in prompts if prompt is not None}
+
+
+def _ask_with_context(user_prompt: str, template_prompt=None) -> str:
+    """Send the system prompt as the system message and user_prompt as the
     user turn. Used by ask_rag and ask_full_doc, not ask_no_context.
     """
     from llama_index.core.llms import ChatMessage, MessageRole
 
+    system_prompt, system_langfuse_prompt = load_system_prompt()
+
     llm = _build_llm()
-    response = llm.chat(
-        [
-            ChatMessage(role=MessageRole.SYSTEM, content=load_system_prompt()),
-            ChatMessage(role=MessageRole.USER, content=user_prompt),
-        ]
-    )
+    with tracing.traced_span(
+        "llm_generation", **_prompt_refs(system_langfuse_prompt, template_prompt)
+    ):
+        response = llm.chat(
+            [
+                ChatMessage(role=MessageRole.SYSTEM, content=system_prompt),
+                ChatMessage(role=MessageRole.USER, content=user_prompt),
+            ]
+        )
     return response.message.content
 
 
@@ -75,9 +94,9 @@ def ask_rag(question: str, manual_path) -> dict:
     # Chunks are joined in retrieval-rank order, not document order - an
     # answer split across non-adjacent chunks may read as disjoint fragments.
     context = "\n\n".join(node.get_content() for node in nodes)
-    user_prompt = build_context_prompt(question, context)
+    user_prompt, template_prompt = build_context_prompt(question, context)
 
-    answer = _ask_with_context(user_prompt)
+    answer = _ask_with_context(user_prompt, template_prompt)
 
     sources = sorted({node.metadata.get("file_name", "unknown") for node in nodes})
     return {"answer": answer, "sources": sources}
@@ -95,9 +114,9 @@ def ask_full_doc(question: str, manual_path) -> dict:
         if span is not None:
             # Full text is already in Anthropic.chat's prompt input; preview is enough here.
             span.update(output={"char_count": len(context), "preview": context[:200]})
-    user_prompt = build_context_prompt(question, context)
+    user_prompt, template_prompt = build_context_prompt(question, context)
 
-    answer = _ask_with_context(user_prompt)
+    answer = _ask_with_context(user_prompt, template_prompt)
 
     return {"answer": answer, "sources": [manual_path.name]}
 
