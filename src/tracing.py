@@ -12,7 +12,7 @@ from src import config
 _instrumented = False
 
 
-def _configured() -> bool:
+def is_configured() -> bool:
     return bool(config.LANGFUSE_PUBLIC_KEY and config.LANGFUSE_SECRET_KEY)
 
 
@@ -20,7 +20,7 @@ def init_tracing() -> None:
     """No-op if Langfuse credentials aren't configured."""
     global _instrumented
 
-    if not _configured():
+    if not is_configured():
         return
 
     from langfuse import Langfuse
@@ -47,7 +47,7 @@ def flush_tracing() -> None:
     any failure (e.g. Langfuse unreachable) so the answer already printed
     to the user is never retracted by a tracing problem.
     """
-    if not _configured():
+    if not is_configured():
         return
 
     from langfuse import get_client
@@ -61,9 +61,9 @@ def flush_tracing() -> None:
 def traced_span(name: str, **input_kwargs):
     """Context manager for a manual span outside LlamaIndex's own
     instrumentation. A no-op when tracing was never configured, so callers
-    don't need to check `_configured()` themselves.
+    don't need to check `is_configured()` themselves.
     """
-    if not _configured():
+    if not is_configured():
         from contextlib import nullcontext
 
         return nullcontext()
