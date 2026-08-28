@@ -7,6 +7,7 @@ Anthropic connection.
 """
 
 import json
+from pathlib import Path
 
 from src import config
 
@@ -110,3 +111,60 @@ def confirm_candidate(candidates: list[dict], input_func=input) -> dict | None:
     if needs_selection(candidates):
         return select_from_list(candidates, input_func=input_func)
     return confirm_single(candidates[0], input_func=input_func)
+
+
+PDF_MAGIC = b"%PDF-"
+
+
+class ManualDownloadError(Exception):
+    """Raised when a confirmed candidate can't be fetched as a real PDF."""
+
+
+def is_pdf_response(content: bytes, content_type: str) -> bool:
+    """A candidate's URL can carry a `.pdf`-looking path yet actually serve
+    an HTML page (seen in practice with some manual-hosting sites) - check
+    both the declared content-type and the file's own magic bytes rather
+    than trusting either alone.
+    """
+    return "pdf" in content_type.lower() or content.startswith(PDF_MAGIC)
+
+
+def filename_for(candidate: dict, url: str) -> str:
+    from urllib.parse import urlparse
+
+    name = Path(urlparse(url).path).name
+    if name.lower().endswith(".pdf"):
+        return name
+    title = candidate.get("title") or "manual"
+    slug = "".join(c if c.isalnum() or c in "-_" else "-" for c in title).strip("-")
+    return f"{slug or 'manual'}.pdf"
+
+
+def download_manual(candidate: dict, dest_dir: Path | None = None) -> Path:
+    """Fetch the confirmed candidate's URL and, once confirmed to actually
+    be a PDF, write it to `dest_dir` (default: config.MANUALS_DIR).
+
+    Raises ManualDownloadError on any network failure or non-PDF response;
+    nothing is written to disk unless the response passes validation.
+    """
+    import httpx
+
+    dest_dir = Path(dest_dir) if dest_dir is not None else config.MANUALS_DIR
+    url = candidate["url"]
+
+    try:
+        response = httpx.get(url, follow_redirects=True, timeout=30.0)
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise ManualDownloadError(f"Failed to download {url}: {exc}") from exc
+
+    content_type = response.headers.get("content-type", "")
+    if not is_pdf_response(response.content, content_type):
+        raise ManualDownloadError(
+            f"{url} did not return a PDF (content-type: {content_type or 'unknown'})"
+        )
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_path = dest_dir / filename_for(candidate, url)
+    dest_path.write_bytes(response.content)
+    return dest_path

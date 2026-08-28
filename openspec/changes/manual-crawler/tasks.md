@@ -13,10 +13,10 @@
 
 ## 3. Download and Validation
 
-- [ ] 3.1 Implement PDF download of the confirmed URL to `data/manuals/`, using content-type/magic-byte checks to confirm it's actually a PDF before writing
-- [ ] 3.2 Handle a confirmed URL that isn't a real PDF (wrong content-type) with a clear error, no partial/invalid file left behind
-- [ ] 3.3 Handle fetch failures (network error, 403/404) with a clear error message
-- [ ] 3.4 Verify: confirm a real candidate downloads successfully to `data/manuals/`, and confirm a deliberately-wrong URL (e.g. an HTML page) fails cleanly with the expected error
+- [x] 3.1 Implement PDF download of the confirmed URL to `data/manuals/`, using content-type/magic-byte checks to confirm it's actually a PDF before writing
+- [x] 3.2 Handle a confirmed URL that isn't a real PDF (wrong content-type) with a clear error, no partial/invalid file left behind
+- [x] 3.3 Handle fetch failures (network error, 403/404) with a clear error message
+- [x] 3.4 Verify: confirm a real candidate downloads successfully to `data/manuals/`, and confirm a deliberately-wrong URL (e.g. an HTML page) fails cleanly with the expected error — verified 2026-08-28 against a temp dir: the real Aquadistri PDF downloaded (6.7MB), `https://example.com/` (HTML) was rejected with a clear content-type error, a 404 URL was rejected with a clear HTTP-error message, and only the valid PDF was left on disk
 
 ## 4. Ingestion Hand-off
 
