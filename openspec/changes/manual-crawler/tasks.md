@@ -20,9 +20,9 @@
 
 ## 4. Ingestion Hand-off
 
-- [ ] 4.1 Call `src/ingest.py`'s existing ingestion function in-process with the downloaded PDF's path, unchanged from its current single-path contract
-- [ ] 4.2 Print the same "ready to query" confirmation ingestion already prints, so the CLI flow reads as one continuous action from product name to queryable manual
-- [ ] 4.3 Verify: run `python -m src.find_manual "<product name>"` end to end, confirm the manual is indexed, then immediately ask a question against it with `python -m src.ask` and get a grounded, cited answer
+- [x] 4.1 Call `src/ingest.py`'s existing ingestion function in-process with the downloaded PDF's path, unchanged from its current single-path contract
+- [x] 4.2 Print the same "ready to query" confirmation ingestion already prints, so the CLI flow reads as one continuous action from product name to queryable manual
+- [x] 4.3 Verify: run `python -m src.find_manual "<product name>"` end to end, confirm the manual is indexed, then immediately ask a question against it with `python -m src.ask` and get a grounded, cited answer — verified 2026-08-28 against "Aquaflow 200 water filter": found and confirmed `Manual-SuperFish-Aqua-Aqua-Flow100-200.pdf`, downloaded to `data/manuals/`, ingested successfully, then `python -m src.ask "How do I clean the filter?"` returned a grounded, cited answer ("every 1 or 2 weeks... rinsing it with clean tap water", `Sources: Manual-SuperFish-Aqua-Aqua-Flow100-200.pdf`)
 
 ## 5. Tests
 

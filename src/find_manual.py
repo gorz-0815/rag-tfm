@@ -6,6 +6,7 @@ not at module level, so this module stays importable without a live
 Anthropic connection.
 """
 
+import argparse
 import json
 from pathlib import Path
 
@@ -168,3 +169,46 @@ def download_manual(candidate: dict, dest_dir: Path | None = None) -> Path:
     dest_path = dest_dir / filename_for(candidate, url)
     dest_path.write_bytes(response.content)
     return dest_path
+
+
+def find_and_ingest(product_name: str, input_func=input) -> Path | None:
+    """Search, confirm, download, and ingest a manual for `product_name`.
+
+    Returns the ingested manual's local path, or None if no candidate was
+    found or the user declined all of them.
+    """
+    from src.ingest import build_index
+
+    candidates = search_candidates(product_name)
+    if not candidates:
+        print(f"No manual found for {product_name!r}.")
+        return None
+
+    candidate = confirm_candidate(candidates, input_func=input_func)
+    if candidate is None:
+        print("No manual selected.")
+        return None
+
+    try:
+        manual_path = download_manual(candidate)
+    except ManualDownloadError as exc:
+        print(f"Download failed: {exc}")
+        return None
+
+    build_index(manual_path)
+    print(f"Index ready for {manual_path} in {config.STORAGE_DIR}")
+    return manual_path
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Find a product's manual on the web and ingest it."
+    )
+    parser.add_argument("product_name", help="Product name to search a manual for")
+    args = parser.parse_args()
+
+    find_and_ingest(args.product_name)
+
+
+if __name__ == "__main__":
+    main()
