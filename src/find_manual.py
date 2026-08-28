@@ -66,3 +66,47 @@ def parse_candidates(text: str) -> list[dict]:
     if not isinstance(candidates, list):
         return []
     return [c for c in candidates if isinstance(c, dict) and c.get("url")]
+
+
+def needs_selection(candidates: list[dict]) -> bool:
+    """A single high-confidence candidate gets a yes/no confirmation;
+    anything else (multiple candidates, or one at less than high
+    confidence) gets a numbered pick-list instead.
+    """
+    return not (len(candidates) == 1 and candidates[0].get("confidence") == "high")
+
+
+def confirm_single(candidate: dict, input_func=input) -> dict | None:
+    print(f"Found: {candidate.get('title', candidate['url'])}")
+    print(f"  {candidate['url']}")
+    if candidate.get("note"):
+        print(f"  {candidate['note']}")
+    answer = input_func("Use this manual? [y/N] ").strip().lower()
+    return candidate if answer == "y" else None
+
+
+def select_from_list(candidates: list[dict], input_func=input) -> dict | None:
+    print("Multiple possible manuals found:")
+    for i, candidate in enumerate(candidates, start=1):
+        print(f"  {i}. {candidate.get('title', candidate['url'])}")
+        print(f"     {candidate['url']}")
+        if candidate.get("note"):
+            print(f"     {candidate['note']}")
+    answer = input_func("Pick a number, or press Enter to skip: ").strip()
+    if not answer.isdigit():
+        return None
+    index = int(answer)
+    if not (1 <= index <= len(candidates)):
+        return None
+    return candidates[index - 1]
+
+
+def confirm_candidate(candidates: list[dict], input_func=input) -> dict | None:
+    """Run the full confirmation flow and return the user-picked candidate,
+    or None if the user declined or there was nothing to pick from.
+    """
+    if not candidates:
+        return None
+    if needs_selection(candidates):
+        return select_from_list(candidates, input_func=input_func)
+    return confirm_single(candidates[0], input_func=input_func)

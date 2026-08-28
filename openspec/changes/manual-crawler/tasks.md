@@ -6,10 +6,10 @@
 
 ## 2. Candidate Confirmation UX
 
-- [ ] 2.1 Implement single-best-match confirmation: when exactly one high-confidence candidate is returned, print its URL/title and prompt the user for yes/no
-- [ ] 2.2 Implement multi-candidate selection: when multiple plausible candidates are returned, print a numbered list (URL + title + note) and prompt the user to pick one or decline all
-- [ ] 2.3 Handle user declining all candidates: exit cleanly with no download, no ingestion
-- [ ] 2.4 Verify: run against a product name that yields one clear candidate, and one that yields multiple plausible candidates (e.g. an ambiguous/generic product name); confirm both UX paths behave correctly
+- [x] 2.1 Implement single-best-match confirmation: when exactly one high-confidence candidate is returned, print its URL/title and prompt the user for yes/no
+- [x] 2.2 Implement multi-candidate selection: when multiple plausible candidates are returned, print a numbered list (URL + title + note) and prompt the user to pick one or decline all
+- [x] 2.3 Handle user declining all candidates: exit cleanly with no download, no ingestion
+- [x] 2.4 Verify: run against a product name that yields one clear candidate, and one that yields multiple plausible candidates (e.g. an ambiguous/generic product name); confirm both UX paths behave correctly — verified 2026-08-28: "Aquaflow 200 water filter" produced a single high-confidence candidate routed to the yes/no confirmation; "Model X200 router" produced a single low-confidence candidate (Linksys X2000, explicitly noted as a possible model-number mismatch) correctly routed to the list-selection path instead
 
 ## 3. Download and Validation
 
