@@ -26,8 +26,8 @@
 
 ## 5. Tests
 
-- [ ] 5.1 Add `tests/test_find_manual.py` covering the dependency-light logic without real network/API calls: candidate-list parsing (single vs. multiple vs. zero candidates), confirmation-path selection logic, and PDF content-type validation — mock the search/download calls
-- [ ] 5.2 Add an opt-in live test (env-var gated, following `tests/test_ask_live.py`'s `RUN_LIVE_LLM_TESTS` pattern) that runs a real search+download+ingest for one known product name, skipped by default
+- [x] 5.1 Add `tests/test_find_manual.py` covering the dependency-light logic without real network/API calls: candidate-list parsing (single vs. multiple vs. zero candidates), confirmation-path selection logic, and PDF content-type validation — mock the search/download calls
+- [x] 5.2 Add an opt-in live test (env-var gated, following `tests/test_ask_live.py`'s `RUN_LIVE_LLM_TESTS` pattern) that runs a real search+download+ingest for one known product name, skipped by default — added `tests/test_find_manual_live.py`, skipped by default, verified 2026-08-28 with `RUN_LIVE_LLM_TESTS=1` (passed)
 
 ## 6. Docs
 
