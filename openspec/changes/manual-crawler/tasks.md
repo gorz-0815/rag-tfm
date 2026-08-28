@@ -1,8 +1,8 @@
 ## 1. Web Search and Ranking
 
-- [ ] 1.1 Add an Anthropic web-search-tool-enabled call in a new `src/find_manual.py`: given a product name, prompt Claude to search the web and return a structured list of candidate manual URLs (`{url, title, confidence, note}`)
-- [ ] 1.2 Parse the structured response into candidate objects; handle the case of zero candidates returned
-- [ ] 1.3 Verify: run the search step alone (no download/ingest yet) against a real product name, confirm it returns plausible candidate URL(s) with confidence/notes
+- [x] 1.1 Add an Anthropic web-search-tool-enabled call in a new `src/find_manual.py`: given a product name, prompt Claude to search the web and return a structured list of candidate manual URLs (`{url, title, confidence, note}`)
+- [x] 1.2 Parse the structured response into candidate objects; handle the case of zero candidates returned
+- [x] 1.3 Verify: run the search step alone (no download/ingest yet) against a real product name, confirm it returns plausible candidate URL(s) with confidence/notes — verified 2026-08-28 against "Aquaflow 200 water filter": returned `https://aquadistri.com/wp-content/uploads/2023/01/Manual-SuperFish-Aqua-Aqua-Flow100-200.pdf`, confidence "high", note identifying it as the official manufacturer manual
 
 ## 2. Candidate Confirmation UX
 
