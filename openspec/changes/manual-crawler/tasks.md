@@ -31,4 +31,4 @@
 
 ## 6. Docs
 
-- [ ] 6.1 Add a README section describing `python -m src.find_manual` alongside the existing `ingest`/`ask` usage, and note it as a discovery convenience layered on top of ingestion (not a replacement for pointing the CLI at a manual you already have)
+- [x] 6.1 Add a README section describing `python -m src.find_manual` alongside the existing `ingest`/`ask` usage, and note it as a discovery convenience layered on top of ingestion (not a replacement for pointing the CLI at a manual you already have)
